@@ -1,44 +1,12 @@
-@media (max-width: 767.98px) {
-  table {
-    border: 0;
-  }
+.transition {
+  transition: all 0.3s ease;
+}
 
-  table thead {
-    display: none;
-  }
+.hover-shadow:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15) !important;
+}
 
-  table tr {
-    margin-bottom: 1rem;
-    display: block;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 1rem;
-    background: white;
-  }
-
-  table td {
-    display: block;
-    text-align: right;
-    font-size: 0.9rem;
-    border: none;
-    padding: 0.5rem 0;
-  }
-
-  table td::before {
-    content: attr(data-label);
-    float: left;
-    font-weight: bold;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    color: #666;
-  }
-
-  table td[data-label] {
-    font-size: 0.8rem;
-    font-weight: normal;
-  }
-
-  table td:last-child {
-    border-bottom: 0;
-  }
+.badge {
+  font-size: 0.8rem;
 }

@@ -2,10 +2,9 @@
 import { useState, useEffect, useRef } from "react";
 
 // Plugin
-// import axios from "axios";
 import { Modal } from "bootstrap";
 
-// Inner Resources (Image, Video, css)
+// CSS
 import "./App.css";
 
 function App() {
@@ -23,7 +22,7 @@ function App() {
 			origin_price: 150,
 			price: 99,
 			title: "草莓莓果夾心圈",
-			unit: "元",
+			unit: "個",
 			num: 10,
 			imageUrl: "https://images.unsplash.com/photo-1583182332473-b31ba08929c8",
 			imagesUrl: [
@@ -70,131 +69,124 @@ function App() {
 
 	useEffect(() => {
 		myModal.current = new Modal(modalRef.current, {
-      backdrop: 'static',
-      keyboard: true,
-    });
+			backdrop: "static",
+			keyboard: true,
+		});
 	}, []);
 
-	const modalShow = (product) => {
-    setTempProduct(product)
+	const openModal = (product) => {
+		setTempProduct(product);
 		myModal.current.show();
 	};
 
-  const modalHide = () => {
-		myModal.current.hide();
-	};
 	return (
 		<>
 			{/* Modal */}
 			<div className="modal fade" ref={modalRef} tabIndex="-1" aria-hidden="true">
-				<div className="modal-dialog modal-dialog-centered modal-lg">
+				<div className="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
 					<div className="modal-content">
 						<div className="modal-header">
-							<h1 className="modal-title fs-5">{tempProduct?.title || "Loading..."}</h1>
-							<button type="button" className="btn-close" onClick={() => modalHide()} aria-label="Close"></button>
+							<h1 className="modal-title fs-5">{tempProduct?.title || "載入中..."}</h1>
+							<button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 						</div>
 						<div className="modal-body">
-							{tempProduct ? (
-								<>
-									<div className="row">
-										<div className="col-md-6">
-											<div style={{ height: "300px" }} className="mb-2">
-												<img
-													src={tempProduct.imageUrl}
-													alt={tempProduct.title}
-													className="rounded-1 h-100 w-100 object-fit-cover"
-												/>
+							{tempProduct && (
+								<div className="row g-4">
+									<div className="col-md-6">
+										<img
+											src={tempProduct.imageUrl}
+											alt={tempProduct.title}
+											className="img-fluid rounded mb-3 shadow-sm"
+											style={{ height: "350px", objectFit: "cover", width: "100%" }}
+										/>
+										{tempProduct.imagesUrl?.length > 0 && (
+											<div className="d-flex gap-2 flex-wrap">
+												{tempProduct.imagesUrl.map((img, i) => (
+													<img
+														key={i}
+														src={img}
+														alt=""
+														className="rounded shadow-sm"
+														style={{ width: "80px", height: "80px", objectFit: "cover" }}
+													/>
+												))}
 											</div>
-											{tempProduct.imagesUrl?.length > 0 && (
-												<div className="d-flex gap-2">
-													{tempProduct.imagesUrl.map((img, i) => (
-														<div key={i} style={{ width: "50px", height: "50px" }}>
-															<img src={img} className="h-100 w-100 object-fit-cover rounded" alt="" />
-														</div>
-													))}
-												</div>
-											)}
-										</div>
-										<div className="col-md-6 text-start">
-											<p className="fs-6">
-												<strong>分類：</strong>
-												{tempProduct.category}
-											</p>
-											<p className="fs-6">
-												<strong>描述：</strong>
-												{tempProduct.description}
-											</p>
-											<p className="fs-6">
-												<strong>內容：</strong>
-												{tempProduct.content}
-											</p>
-											<p className="fs-6">
-												<strong>原價：</strong>
-												<del>
-													{tempProduct.origin_price} {tempProduct.unit}
-												</del>
-											</p>
-											<p className="fs-6">
-												<strong>售價：</strong>
-												<span className="text-danger fs-4">
-													{tempProduct.price} {tempProduct.unit}
-												</span>
-											</p>
-											<p className="fs-6">
-												<strong>庫存：</strong>
-												{tempProduct.num}
-											</p>
-											<p className="fs-6">
-												<strong>狀態：</strong>
-												{tempProduct.is_enabled === 1 ? "啟用" : "未啟用"}
-											</p>
-										</div>
+										)}
 									</div>
-								</>
-							) : (
-								<p>請選擇一個產品</p>
+									<div className="col-md-6">
+										<p className="text-muted small mb-2">分類：{tempProduct.category}</p>
+										<p className="mb-3">{tempProduct.description}</p>
+										<p className="text-muted small">內容：{tempProduct.content}</p>
+										<div className="my-4">
+											<p className="text-decoration-line-through text-muted">
+												原價：${tempProduct.origin_price} {tempProduct.unit}
+											</p>
+											<p className="fs-3 text-danger fw-bold">
+												售價：${tempProduct.price} {tempProduct.unit}
+											</p>
+										</div>
+										<p className="mb-2">
+											庫存：{tempProduct.num} {tempProduct.unit}
+										</p>
+										<p className="mb-0">
+											狀態：
+											<span className={`badge ms-2 ${tempProduct.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
+												{tempProduct.is_enabled === 1 ? "啟用" : "未啟用"}
+											</span>
+										</p>
+									</div>
+								</div>
 							)}
 						</div>
 						<div className="modal-footer">
-							<button type="button" className="btn btn-secondary" onClick={() => modalHide()}>
+							<button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
 								關閉
 							</button>
 						</div>
 					</div>
 				</div>
 			</div>
-			{/* ProductList */}
-			<div className="container">
-				<div className="row mt-5">
-					<div className="col">
-						<h2>產品列表</h2>
-						<table className="table">
-							<thead>
-								<tr className="d-none d-md-table-row">
-									<th>產品名稱</th>
-									<th>原價</th>
-									<th>售價</th>
-									<th>是否啟用</th>
-									<th>查看細節</th>
-								</tr>
-							</thead>
-							<tbody>
-								{products.map((item) => (
-									<tr key={item.id}>
-										<td data-label="產品名稱">{item.title}</td>
-										<td data-label="原價">{item.origin_price}</td>
-										<td data-label="售價">{item.price}</td>
-										<td data-label="是否啟用">{item.is_enabled === 1 ? "啟用" : "未啟用"}</td>
-										<td data-label="查看細節">
-											<button className="btn btn-primary" onClick={() => modalShow(item)}>
-												查看細節
-											</button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+
+			{/* Product List - Card Grid */}
+			<div className="container py-5">
+				<h2 className="text-center mb-5 fw-bold">產品列表</h2>
+
+				<div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+					{products.map((item) => (
+						<div key={item.id} className="col">
+							<div className="card h-100 shadow-sm hover-shadow transition">
+								<img
+									src={item.imageUrl}
+									alt={item.title}
+									className="card-img-top"
+									style={{ height: "220px", objectFit: "cover" }}
+								/>
+								<div className="card-body d-flex flex-column">
+									<h5 className="card-title fw-bold">{item.title}</h5>
+									<p className="card-text text-muted small flex-grow-1">{item.description}</p>
+
+									<div className="mt-3">
+										<p className="text-decoration-line-through text-muted mb-1">
+											${item.origin_price} {item.unit}
+										</p>
+										<p className="fs-4 text-danger fw-bold mb-2">
+											${item.price} / {item.unit}
+										</p>
+										<p className="text-muted small mb-2">
+											狀態：
+											<span className={`ms-2 badge ${item.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
+												{item.is_enabled === 1 ? "啟用" : "未啟用"}
+											</span>
+										</p>
+									</div>
+
+									<button className="btn btn-primary mt-auto" onClick={() => openModal(item)}>
+										查看細節
+									</button>
+								</div>
+							</div>
+						</div>
+					))}
 				</div>
 			</div>
 		</>
