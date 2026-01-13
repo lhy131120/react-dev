@@ -5,7 +5,7 @@ import "./App.css";
 
 function App() {
 	const API_BASE = "https://ec-course-api.hexschool.io/v2";
-  const API_PATH = "kitchen-traveler";
+	const API_PATH = "kitchen-traveler";
 	const modalRef = useRef(null);
 	const myModal = useRef(null);
 
@@ -44,12 +44,16 @@ function App() {
 				`${API_BASE}/api/user/check`,
 				{},
 				{
-					headers: { Authorization: token },
+					headers: {
+						Authorization: token,
+					},
 				}
 			);
 			if (response.data.success) {
 				setIsAuth(true);
 				getProducts();
+			} else {
+				setIsAuth(false);
 			}
 		} catch (err) {
 			console.error("自動驗證失敗", err?.response?.data || err);
@@ -60,10 +64,21 @@ function App() {
 	// 取得產品列表
 	const getProducts = async () => {
 		try {
-			const res = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products/all`);
+
+      const token = getTokenFromCookie();
+      if(!token) throw new Error("No token found");
+
+			const res = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products/all`,{
+        headers: { Authorization: token}
+      });
+
 			const { products } = res.data;
-      console.log(products);
-			// setProducts(...products || []);
+			const productArr = Object.keys(products).map((id) => ({
+				id,
+				...products[id],
+			}));
+
+			setProducts(productArr);
 		} catch (err) {
 			console.error("取得產品失敗", err?.response?.data || err);
 			alert("取得產品列表失敗，請重新登入");
@@ -90,8 +105,6 @@ function App() {
 			// 設定 cookie
 			document.cookie = `hexToken=${token}; expires=${new Date(expired).toUTCString()}; path=/`;
 
-			axios.defaults.headers.common["Authorization"] = token;
-
 			setIsAuth(true);
 			await getProducts();
 		} catch (err) {
@@ -102,21 +115,32 @@ function App() {
 
 	// 初始化 Bootstrap Modal + 檢查登入狀態
 	useEffect(() => {
+		const modalElement = modalRef.current;
+		if (!modalElement) return;
+
 		myModal.current = new Modal(modalRef.current, {
 			backdrop: "static",
 			keyboard: true,
 		});
 
-		// 組件載入時檢查是否已登入
-		const initAuth = async () => {
-			const token = getTokenFromCookie();
-			if (token) {
-				axios.defaults.headers.common["Authorization"] = token;
-			}
-			await checkAuth(token);
-		};
+		const handleModalHide = (e) => (e.target.inert = true);
+		const handleModalShow = (e) => (e.target.inert = false);
 
-		initAuth();
+		modalRef.current.addEventListener("hide.bs.modal", handleModalHide);
+		modalRef.current.addEventListener("show.bs.modal", handleModalShow);
+
+		// 組件載入時檢查是否已登入
+
+		const token = getTokenFromCookie();
+		if (token) {
+			axios.defaults.headers.common["Authorization"] = token;
+			checkAuth(token);
+		}
+
+		return () => {
+			modalElement.removeEventListener("hide.bs.modal", handleModalHide);
+			modalElement.removeEventListener("show.bs.modal", handleModalShow);
+		};
 	}, []);
 
 	const openModal = (product) => {
@@ -128,12 +152,12 @@ function App() {
 		<div className="container py-5">
 			{isAuth ? (
 				<>
-					<h2 className="text-center mb-5 fw-bold">產品列表</h2>
+					<h1 className="text-center mb-5 fw-bold">產品列表</h1>
 
 					{products.length === 0 ? (
-						<div className="text-center py-5">目前沒有產品資料...</div>
+						<h2 className="text-center py-5">目前沒有產品資料...</h2>
 					) : (
-						<div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
+						<div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-5">
 							{products.map((item) => (
 								<div key={item.id} className="col">
 									<div className="card h-100 shadow-sm hover-shadow transition">
@@ -144,26 +168,16 @@ function App() {
 											style={{ height: "220px", objectFit: "cover" }}
 										/>
 										<div className="card-body d-flex flex-column">
-											<h5 className="card-title fw-bold">{item.title}</h5>
-											<p className="card-text text-muted small flex-grow-1">{item.description}</p>
+											<h2 className="fs-6 card-title fw-bold">{item.title}</h2>
 
 											<div className="mt-3">
-												<p className="text-decoration-line-through text-muted mb-1">
-													${item.origin_price} {item.unit}
-												</p>
-												<p className="fs-4 text-danger fw-bold mb-2">
+												<p className="fs-5 text-danger fw-bold mb-2">
 													${item.price} / {item.unit}
-												</p>
-												<p className="text-muted small mb-2">
-													狀態：
-													<span className={`ms-2 badge ${item.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
-														{item.is_enabled === 1 ? "啟用" : "未啟用"}
-													</span>
 												</p>
 											</div>
 
-											<button className="btn btn-primary mt-auto" onClick={() => openModal(item)}>
-												查看細節
+											<button className="btn btn-primary mt-auto fw-bold" onClick={() => openModal(item)}>
+												<small>查看細節</small>
 											</button>
 										</div>
 									</div>
@@ -240,16 +254,21 @@ function App() {
 											style={{ height: "350px", objectFit: "cover", width: "100%" }}
 										/>
 										{tempProduct.imagesUrl?.length > 0 && (
-											<div className="d-flex gap-2 flex-wrap">
-												{tempProduct.imagesUrl.map((img, i) => (
-													<img
-														key={i}
-														src={img}
-														alt=""
-														className="rounded shadow-sm"
-														style={{ width: "80px", height: "80px", objectFit: "cover" }}
-													/>
-												))}
+											<div className="d-flex gap-2 flex-wrap rounded overflow-hidden">
+												{tempProduct.imagesUrl
+													.filter((img) => img && img.trim() !== "")
+													.map((img, i) => (
+														<img
+															key={i}
+															src={img}
+															alt={`additional-${i}`}
+															className="shadow-sm"
+															style={{ width: "80px", height: "80px", objectFit: "cover" }}
+															onError={(e) => {
+																e.target.src = "https://via.placeholder.com/80?text=NoImage";
+															}}
+														/>
+													))}
 											</div>
 										)}
 									</div>
