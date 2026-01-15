@@ -3,20 +3,35 @@ import axios from "axios";
 import { Modal } from "bootstrap";
 import "./App.css";
 
-const API_BASE = "https://ec-course-api.hexschool.io/v2";
-const API_PATH = "kitchen-traveler";
+const API_BASE = import.meta.env.VITE_API_BASE;
+const API_PATH = import.meta.env.VITE_API_PATH;
+
+const requiredFields = [
+	"category",
+	"subcategory",
+	"content",
+	"description",
+	"origin_price",
+	"price",
+	"title",
+	"unit",
+  "num",
+	"imageUrl",
+];
 
 function App() {
 	const [isAuth, setIsAuth] = useState(false);
 	const [products, setProducts] = useState([]);
 	const [adminProducts, setAdminProducts] = useState([]);
 	const [tempProduct, setTempProduct] = useState(null);
-	const [viewMode, setViewMode] = useState("products"); // 'products' or 'dashboard'
+	const [viewMode, setViewMode] = useState("products");
 	const [pendingAction, setPendingAction] = useState(null);
 	const [loginData, setLoginData] = useState({
 		username: "",
 		password: "",
 	});
+
+	const [formErrors, setFormErrors] = useState({});
 
 	// 存放真正的 Bootstrap Modal 實例
 	const productModalInstance = useRef(null);
@@ -29,6 +44,156 @@ function App() {
 	const adminModalRef = useRef(null);
 	const loginModalRef = useRef(null);
 	const deleteItemModalRef = useRef(null);
+
+	const getTokenFromCookie = () => {
+		const name = "hexToken=";
+		const decodedCookie = decodeURIComponent(document.cookie);
+		const ca = decodedCookie.split(";");
+		for (let i = 0; i < ca.length; i++) {
+			let c = ca[i].trim();
+			if (c.indexOf(name) === 0) {
+				return c.substring(name.length, c.length);
+			}
+		}
+		return "";
+	};
+
+	const openModal = (type, item = null) => {
+		if (type === "edit" || type === "newItem") {
+			setFormErrors({});
+		}
+
+		if (type === "product") {
+			setTempProduct(item);
+			productModalInstance.current?.show();
+		} else if (type === "edit") {
+			setTempProduct({ ...item }); // 複製一份，避免修改原資料
+			adminModalInstance.current?.show();
+		} else if (type === "newItem") {
+			setTempProduct({
+				category: "",
+				subcategory: "",
+				content: "",
+				description: "",
+				origin_price: 1,
+				price: 1,
+				title: "",
+				unit: "",
+        num: 0,
+				imageUrl: "",
+				imagesUrl: [],
+				is_enabled: 1,
+				label: [],
+			});
+			adminModalInstance.current?.show();
+		} else if (type === "login") {
+			loginModalInstance.current?.show();
+		} else if (type === "delete") {
+			setTempProduct(item);
+			deleteItemModalInstance.current?.show();
+		} else {
+			console.warn("未知的 modal type:", type);
+		}
+	};
+
+	const closeModal = (type) => {
+		if (type === "product") {
+			productModalInstance.current?.hide();
+		} else if (type === "edit" || type === "newItem") {
+			adminModalInstance.current?.hide();
+		} else if (type === "delete") {
+			deleteItemModalInstance.current?.hide();
+		} else if (type === "login") {
+			loginModalInstance.current?.hide();
+		}
+		// setTempProduct(null);
+
+		if (type === "edit" || type === "newItem") {
+			setFormErrors({});
+		}
+	};
+
+	const handleInputChange = (e) => {
+		const { name, value } = e.target;
+		setLoginData((prev) => ({
+			...prev,
+			[name]: value,
+		}));
+	};
+
+	const handleModalInputChange = (e) => {
+		const { id, value, type, checked } = e.target;
+
+		let newValue = type === "checkbox" ? (checked ? 1 : 0) : value;
+
+		// 數字欄位強制轉 number
+		if (["origin_price", "price"].includes(id)) {
+			newValue = value === "" ? "" : Number(value);
+		}
+
+		setTempProduct((prev) => ({
+			...prev,
+			[id]: newValue,
+		}));
+
+		// 即時驗證單一欄位
+		setFormErrors((prev) => {
+			const newErrors = { ...prev };
+
+			// 必填檢查
+			if (requiredFields.includes(id)) {
+				if (!newValue && newValue !== 0) {
+					newErrors[id] = "此欄位為必填";
+				} else {
+					delete newErrors[id];
+				}
+			}
+
+			// 數字 > 0 檢查
+			if (id === "origin_price") {
+				if (newValue <= 0) {
+					newErrors[id] = "原價必須大於 0";
+				} else {
+					delete newErrors[id];
+				}
+			} else if (id === "price") {
+				if (newValue <= 0) {
+					newErrors[id] = "售價必須大於 0";
+				} else {
+					delete newErrors[id];
+				}
+			} else if (id === "num") {
+				if (newValue < 0) {
+					newErrors[id] = "數量不能小於 0";
+				} else {
+					delete newErrors[id];
+				}
+			}
+
+			return newErrors;
+		});
+	};
+
+	const validateForm = () => {
+		const errors = {};
+
+		requiredFields.forEach((field) => {
+			if (!tempProduct?.[field] && tempProduct?.[field] !== 0) {
+				errors[field] = "此欄位為必填";
+			}
+		});
+
+		// 數字欄位 > 0 檢查
+		if (tempProduct?.origin_price <= 0) {
+			errors.origin_price = "原價必須大於 0";
+		}
+		if (tempProduct?.price <= 0) {
+			errors.price = "售價必須大於 0";
+		}
+
+		setFormErrors(errors);
+		return Object.keys(errors).length === 0; // true 表示驗證通過
+	};
 
 	const getProducts = async () => {
 		try {
@@ -60,6 +225,7 @@ function App() {
 				id,
 				...products[id],
 			}));
+      console.log(products)
 			setAdminProducts(productArr);
 		} catch (error) {
 			console.error("取得管理員產品列表失敗:", error?.response?.data || error);
@@ -70,36 +236,6 @@ function App() {
 		}
 	};
 
-	const handleInputChange = (e) => {
-		const { name, value } = e.target;
-		setLoginData((prev) => ({
-			...prev,
-			[name]: value,
-		}));
-	};
-
-	const handleModalInputChange = (e) => {
-		const { id, value, type, checked } = e.target;
-		setTempProduct((prev) => ({
-			...prev,
-			[id]: type === "checkbox" ? (checked ? 1 : 0) : value,
-		}));
-	};
-
-	const getTokenFromCookie = () => {
-		const name = "hexToken=";
-		const decodedCookie = decodeURIComponent(document.cookie);
-		const ca = decodedCookie.split(";");
-		for (let i = 0; i < ca.length; i++) {
-			let c = ca[i].trim();
-			if (c.indexOf(name) === 0) {
-				return c.substring(name.length, c.length);
-			}
-		}
-		return "";
-	};
-
-	// 送出登入
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
@@ -140,7 +276,21 @@ function App() {
 
 	const showProductsArea = () => {
 		setViewMode("products");
-    getProducts();
+		getProducts();
+	};
+
+	const handleLogout = async () => {
+		try {
+			const response = await axios.post(`${API_BASE}/logout`);
+			console.log(response.data.message);
+			document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+			axios.defaults.headers.common["Authorization"] = null;
+			setIsAuth(false);
+			setViewMode("products");
+			getProducts();
+		} catch (error) {
+			console.error("登出失敗:", error?.response?.data || error);
+		}
 	};
 
 	// Admin Actions
@@ -170,25 +320,31 @@ function App() {
 			return;
 		}
 
+		if (!validateForm()) {
+			alert("請修正表單中的錯誤");
+			return;
+		}
+
 		try {
 			const payload = {
 				data: {
 					...tempProduct,
 					origin_price: Number(tempProduct.origin_price),
 					price: Number(tempProduct.price),
+          num: Number(tempProduct.num),
 					is_enabled: tempProduct.is_enabled ? 1 : 0,
-					imagesUrl: (tempProduct.imagesUrl || []).filter((url) => url && url.trim() !== ""), // 過濾空值
+					imagesUrl: (tempProduct.imagesUrl || []).filter((url) => url && url.trim() !== ""),
+					label: (tempProduct.label || []).filter((tag) => tag && tag.trim() !== ""),
 				},
-			}; // API 需要的格式 { data: { ... } }
+			};
+
 			let response;
 
 			if (tempProduct.id) {
-				// 更新既有產品
 				response = await axios.put(`${API_BASE}/api/${API_PATH}/admin/product/${tempProduct.id}`, payload, {
 					headers: { Authorization: `${token}` },
 				});
 			} else {
-				// 新增產品
 				response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/product`, payload, {
 					headers: { Authorization: `${token}` },
 				});
@@ -196,7 +352,7 @@ function App() {
 
 			alert(response.data.message || "操作成功");
 			closeModal(tempProduct.id ? "edit" : "newItem");
-			getAdminProducts(); // 重新載入列表
+			getAdminProducts();
 		} catch (error) {
 			console.error("更新/新增產品失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "操作失敗");
@@ -246,57 +402,30 @@ function App() {
 		deleteItemModalRef.current.addEventListener("hide.bs.modal", handleModalHide);
 		deleteItemModalRef.current.addEventListener("show.bs.modal", handleModalShow);
 
+		const handleHidden = () => {
+			setTempProduct(null); // 等完全隱藏再清空資料
+		};
+
+		[productModalRef, adminModalRef, deleteItemModalRef, loginModalRef].forEach((ref) => {
+			if (ref.current) {
+				ref.current.addEventListener("hidden.bs.modal", handleHidden);
+			}
+		});
+
+		// cleanup function
 		return () => {
 			productModalInstance.current?.dispose();
 			adminModalInstance.current?.dispose();
 			loginModalInstance.current?.dispose();
 			deleteItemModalInstance.current?.dispose();
+
+			[productModalRef, adminModalRef, deleteItemModalRef, loginModalRef].forEach((ref) => {
+				if (ref.current) {
+					ref.current.removeEventListener("hidden.bs.modal", handleHidden);
+				}
+			});
 		};
 	}, []);
-
-	const openModal = (type, item = null) => {
-		if (type === "product") {
-			setTempProduct(item);
-			productModalInstance.current?.show();
-		} else if (type === "edit") {
-			setTempProduct({ ...item }); // 複製一份，避免修改原資料
-			adminModalInstance.current?.show();
-		} else if (type === "newItem") {
-			setTempProduct({
-				title: "",
-				category: "",
-				unit: "",
-				origin_price: "",
-				price: "",
-				description: "",
-				content: "",
-				is_enabled: 1,
-				imageUrl: "",
-				imagesUrl: [],
-			});
-			adminModalInstance.current?.show();
-		} else if (type === "login") {
-			loginModalInstance.current?.show();
-		} else if (type === "delete") {
-			setTempProduct(item);
-			deleteItemModalInstance.current?.show();
-		} else {
-			console.warn("未知的 modal type:", type);
-		}
-	};
-
-	const closeModal = (type) => {
-		if (type === "product") {
-			productModalInstance.current?.hide();
-		} else if (type === "edit" || type === "newItem") {
-			adminModalInstance.current?.hide();
-		} else if (type === "delete") {
-			deleteItemModalInstance.current?.hide();
-		} else if (type === "login") {
-			loginModalInstance.current?.hide();
-		}
-		setTempProduct(null); // 統一清空
-	};
 
 	return (
 		<>
@@ -355,6 +484,9 @@ function App() {
 								<button type="button" className="btn btn-secondary" onClick={showProductsArea}>
 									回前台
 								</button>
+								<button type="button" className="btn btn-danger" onClick={() => handleLogout()}>
+									登出
+								</button>
 								<button type="button" className="btn btn-success" onClick={() => openModal("newItem")}>
 									新增產品
 								</button>
@@ -375,6 +507,7 @@ function App() {
 												圖片
 											</th>
 											<th scope="col">產品名稱</th>
+											<th scope="col">主分類</th>
 											<th scope="col">狀態</th>
 											<th scope="col">操作</th>
 										</tr>
@@ -390,6 +523,7 @@ function App() {
 													/>
 												</td>
 												<td>{item.title}</td>
+												<td>{item.category}</td>
 												<td>
 													<span className={`badge ${item.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
 														{item.is_enabled === 1 ? "啟用" : "未啟用"}
@@ -431,12 +565,14 @@ function App() {
 								<div className="row g-4">
 									{/* 圖片區 */}
 									<div className="col-md-6">
-										<img
-											src={tempProduct.imageUrl}
-											alt={tempProduct.title}
-											className="img-fluid rounded mb-3 shadow"
-											style={{ height: "350px", objectFit: "cover", width: "100%" }}
-										/>
+										{tempProduct?.imageUrl?.trim() && (
+											<img
+												src={tempProduct.imageUrl.trim()}
+												alt={tempProduct.title}
+												className="img-fluid rounded mb-3 shadow"
+												style={{ height: "350px", objectFit: "cover", width: "100%" }}
+											/>
+										)}
 										{tempProduct.imagesUrl?.length > 0 && (
 											<div className="d-flex gap-2 flex-wrap rounded overflow-hidden">
 												{tempProduct.imagesUrl
@@ -460,6 +596,16 @@ function App() {
 									{/* 資訊區 */}
 									<div className="col-md-6">
 										<p className="text-muted small mb-2">分類：{tempProduct.category}</p>
+										<p className="text-muted small mb-2">類別：{tempProduct.subcategory}</p>
+										{tempProduct.label && tempProduct.label.length > 0 && (
+											<div className="d-flex flex-wrap gap-2 mb-2">
+												{tempProduct.label.map((tag, i) => (
+													<span key={i} className="badge bg-secondary">
+														{tag}
+													</span>
+												))}
+											</div>
+										)}
 										<p className="mb-3">{tempProduct.description}</p>
 										<p className="text-muted small">內容：{tempProduct.content}</p>
 
@@ -499,18 +645,218 @@ function App() {
 				<div className="modal-dialog modal-dialog-centered modal-xl">
 					<div className="modal-content">
 						<div className="modal-header">
-							<h5 className="modal-title">Admin - {tempProduct?.title || "管理員產品資訊"}</h5>
+							<h5 className="modal-title">{tempProduct?.title || "新增產品"}</h5>
 							<button type="button" className="btn-close" data-bs-dismiss="modal"></button>
 						</div>
 						<div className="modal-body">
 							{tempProduct && (
-								<div className="row g-4">
+								<div className="row flex-row-reverse g-4">
+									{/* 其他資訊區 */}
+									<div className="col-lg-8">
+										{/* 標題 */}
+										<div className="mb-3">
+											<label htmlFor="title" className="form-label">
+												標題 <span className="text-danger">*</span>
+											</label>
+											<input
+												id="title"
+												type="text"
+												className={`form-control ${formErrors.title ? "is-invalid" : ""}`}
+												placeholder="請輸入標題"
+												value={tempProduct.title || ""}
+												onChange={handleModalInputChange}
+											/>
+											{formErrors.title && <div className="invalid-feedback">{formErrors.title}</div>}
+										</div>
+										{/* 主分類  + 次分類 + 單位 */}
+										<div className="row">
+											<div className="mb-3 col-lg-5">
+												<label htmlFor="category" className="form-label">
+													主分類 <span className="text-danger">*</span>
+												</label>
+												<input
+													id="category"
+													type="text"
+													className={`form-control ${formErrors.category ? "is-invalid" : ""}`}
+													placeholder="請輸入單位"
+													value={tempProduct.category ?? ""}
+													onChange={handleModalInputChange}
+												/>
+												{formErrors.category && <div className="invalid-feedback">{formErrors.category}</div>}
+											</div>
+											<div className="mb-3 col-lg-5">
+												<label htmlFor="subcategory" className="form-label">
+													次分類 <span className="text-danger">*</span>
+												</label>
+												<input
+													id="subcategory"
+													type="text"
+													className={`form-control ${formErrors.subcategory ? "is-invalid" : ""}`}
+													placeholder="請輸入次分類"
+													value={tempProduct.subcategory ?? ""}
+													onChange={handleModalInputChange}
+												/>
+												{formErrors.subcategory && <div className="invalid-feedback">{formErrors.subcategory}</div>}
+											</div>
+											<div className="mb-3 col-lg-2">
+												<label htmlFor="unit" className="form-label">
+													單位 <span className="text-danger">*</span>
+												</label>
+												<input
+													id="unit"
+													type="text"
+													className={`form-control ${formErrors.unit ? "is-invalid" : ""}`}
+													placeholder="單位"
+													value={tempProduct.unit ?? ""}
+													onChange={handleModalInputChange}
+												/>
+												{formErrors.unit && <div className="invalid-feedback">{formErrors.unit}</div>}
+											</div>
+										</div>
+										{/* 原價 + 售價 */}
+										<div className="row">
+											<div className="mb-3 col-lg-6">
+												<label htmlFor="origin_price" className="form-label">
+													原價 <span className="text-danger">*</span>
+												</label>
+												<input
+													id="origin_price"
+													type="number"
+													min="1"
+													className={`form-control ${formErrors.origin_price ? "is-invalid" : ""}`}
+													placeholder="請輸入原價"
+													value={tempProduct.origin_price ?? ""}
+													onChange={handleModalInputChange}
+												/>
+												{formErrors.origin_price && <div className="invalid-feedback">{formErrors.origin_price}</div>}
+											</div>
+											<div className="mb-3 col-lg-6">
+												<label htmlFor="price" className="form-label">
+													售價 <span className="text-danger">*</span>
+												</label>
+												<input
+													id="price"
+													type="number"
+													min="1"
+													className={`form-control ${formErrors.price ? "is-invalid" : ""}`}
+													placeholder="請輸入售價"
+													value={tempProduct.price ?? ""}
+													onChange={handleModalInputChange}
+												/>
+												{formErrors.price && <div className="invalid-feedback">{formErrors.price}</div>}
+											</div>
+										</div>
+										<hr />
+										<div className="mb-3">
+											<label htmlFor="description" className="form-label">
+												產品描述 <span className="text-danger">*</span>
+											</label>
+											<textarea
+												rows={6}
+												id="description"
+												className={`form-control ${formErrors.description ? "is-invalid" : ""}`}
+												placeholder="請輸入產品描述"
+												value={tempProduct.description}
+												onChange={handleModalInputChange}
+											></textarea>
+										</div>
+										<div className="mb-3">
+											<label htmlFor="content" className="form-label">
+												說明內容<span className="text-danger">*</span>
+											</label>
+											<textarea
+												rows={6}
+												id="content"
+												className={`form-control ${formErrors.content ? "is-invalid" : ""}`}
+												placeholder="請輸入說明內容"
+												value={tempProduct.content}
+												onChange={handleModalInputChange}
+											></textarea>
+										</div>
+										<div className="mb-3">
+											<div className="form-check">
+												<input
+													id="is_enabled"
+													className="form-check-input p-0"
+													type="checkbox"
+													checked={tempProduct.is_enabled === 1}
+													onChange={handleModalInputChange}
+												/>
+												<label className="form-check-label" htmlFor="is_enabled">
+													是否啟用
+												</label>
+											</div>
+										</div>
+										{/* 標籤管理 */}
+										<div className="mb-3">
+											<p className="form-label fw-bold">標籤（可多個，建議輸入關鍵字）</p>
+
+											<div className="d-flex align-items-center gap-2">
+												{tempProduct?.label?.map((tag, index) => (
+													<div key={index} className="input-group mb-2 mb-lg-0">
+														<input
+															id={`tag-${index + 1}`}
+															name={`tag-${index + 1}`}
+															type="text"
+															className="form-control"
+															value={tag}
+															onChange={(e) => {
+																const newTags = [...tempProduct.label];
+																newTags[index] = e.target.value.trim(); // 自動去除前後空白
+																setTempProduct((prev) => ({ ...prev, label: newTags }));
+															}}
+															placeholder={`${index + 1} (例如：熱銷、限時)`}
+														/>
+														<button
+															className="btn btn-outline-danger"
+															type="button"
+															onClick={() => {
+																const newTags = tempProduct.label.filter((_, i) => i !== index);
+																setTempProduct((prev) => ({ ...prev, label: newTags }));
+															}}
+														>
+															移除
+														</button>
+													</div>
+												))}
+
+												<button
+													type="button"
+													className={`btn btn-outline-primary w-100 ${
+														tempProduct.label?.length >= 3 ? "d-none" : ""
+													}`}
+													onClick={() => {
+														const newTags = [...(tempProduct.label || []), ""];
+														setTempProduct((prev) => ({ ...prev, label: newTags }));
+													}}
+												>
+													+ 新增標籤
+												</button>
+											</div>
+
+											{/* 簡單預覽（可選） */}
+											{tempProduct?.label?.length > 0 && (
+												<div className="mt-3">
+													<small className="text-muted">目前標籤：</small>
+													<div className="d-flex flex-wrap gap-2 mt-1">
+														{tempProduct.label.map((tag, i) =>
+															tag.trim() ? (
+																<span key={i} className="badge bg-info text-white">
+																	{tag.trim()}
+																</span>
+															) : null
+														)}
+													</div>
+												</div>
+											)}
+										</div>
+									</div>
 									{/* 圖片編輯區 - 主要圖片 + 多張附圖 */}
-									<div className="col-md-4">
+									<div className="col-lg-4">
 										{/* 主要圖片 */}
 										<div className="mb-4">
 											<label htmlFor="imageUrl" className="form-label fw-bold">
-												主要圖片網址
+												主要圖片網址 <span className="text-danger">*</span>
 											</label>
 											<input
 												id="imageUrl"
@@ -523,7 +869,7 @@ function App() {
 											{tempProduct.imageUrl && (
 												<div className="mt-2 border rounded overflow-hidden">
 													<img
-														src={tempProduct.imageUrl}
+														src={tempProduct.imageUrl.trim()}
 														alt="主要圖片預覽"
 														className="img-fluid"
 														style={{ maxHeight: "250px", objectFit: "cover", width: "100%" }}
@@ -537,11 +883,13 @@ function App() {
 
 										{/* 多張附圖管理 */}
 										<div>
-											<label className="form-label fw-bold">附加圖片（可多張）</label>
+											<p className="fw-bold">附加圖片（可多張）</p>
 											{tempProduct.imagesUrl?.map((url, index) => (
 												<div key={index} className="input-group mb-2">
 													<input
-														type="url"
+														name={`imagesUrl-${index + 1}`}
+														id={`imagesUrl-${index + 1}`}
+														type="text"
 														className="form-control"
 														value={url}
 														onChange={(e) => {
@@ -586,7 +934,7 @@ function App() {
 																	<img
 																		src={url}
 																		alt={`附加圖片 ${i + 1}`}
-																		className="rounded shadow-sm object-cover w-100 h-100"
+																		className="rounded shadow-sm object-cover w-100 h-100 object-fit-cover"
 																		onError={(e) => {
 																			e.target.src = "https://via.placeholder.com/80?text=錯誤";
 																		}}
@@ -597,120 +945,6 @@ function App() {
 													</div>
 												</div>
 											)}
-										</div>
-									</div>
-
-									{/* 其他資訊區（原內容保持不變） */}
-									<div className="col-sm-8">
-										<div className="mb-3">
-											<label htmlFor="title" className="form-label">
-												標題
-											</label>
-											<input
-												id="title"
-												type="text"
-												className="form-control"
-												placeholder="請輸入標題"
-												value={tempProduct.title}
-												onChange={handleModalInputChange}
-											/>
-										</div>
-										<div className="row">
-											<div className="mb-3 col-md-6">
-												<label htmlFor="category" className="form-label">
-													分類
-												</label>
-												<input
-													id="category"
-													type="text"
-													className="form-control"
-													placeholder="請輸入分類"
-													value={tempProduct.category}
-													onChange={handleModalInputChange}
-												/>
-											</div>
-											<div className="mb-3 col-md-6">
-												<label htmlFor="unit" className="form-label">
-													單位
-												</label>
-												<input
-													id="unit"
-													type="text"
-													className="form-control"
-													placeholder="請輸入單位"
-													value={tempProduct.unit}
-													onChange={handleModalInputChange}
-												/>
-											</div>
-										</div>
-										<div className="row">
-											<div className="mb-3 col-md-6">
-												<label htmlFor="origin_price" className="form-label">
-													原價
-												</label>
-												<input
-													id="origin_price"
-													type="number"
-													min="0"
-													className="form-control"
-													placeholder="請輸入原價"
-													value={tempProduct.origin_price}
-													onChange={handleModalInputChange}
-												/>
-											</div>
-											<div className="mb-3 col-md-6">
-												<label htmlFor="price" className="form-label">
-													售價
-												</label>
-												<input
-													id="price"
-													type="number"
-													min="0"
-													className="form-control"
-													placeholder="請輸入售價"
-													value={tempProduct.price}
-													onChange={handleModalInputChange}
-												/>
-											</div>
-											<hr />
-											<div className="mb-3">
-												<label htmlFor="description" className="form-label">
-													產品描述
-												</label>
-												<textarea
-													id="description"
-													className="form-control"
-													placeholder="請輸入產品描述"
-													value={tempProduct.description}
-													onChange={handleModalInputChange}
-												></textarea>
-											</div>
-											<div className="mb-3">
-												<label htmlFor="content" className="form-label">
-													說明內容
-												</label>
-												<textarea
-													id="content"
-													className="form-control"
-													placeholder="請輸入說明內容"
-													value={tempProduct.content}
-													onChange={handleModalInputChange}
-												></textarea>
-											</div>
-											<div className="mb-3">
-												<div className="form-check">
-													<input
-														id="is_enabled"
-														className="form-check-input"
-														type="checkbox"
-														checked={tempProduct.is_enabled === 1}
-														onChange={handleModalInputChange}
-													/>
-													<label className="form-check-label" htmlFor="is_enabled">
-														是否啟用
-													</label>
-												</div>
-											</div>
 										</div>
 									</div>
 								</div>
