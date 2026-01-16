@@ -15,11 +15,13 @@ const requiredFields = [
 	"price",
 	"title",
 	"unit",
-  "num",
+	"num",
 	"imageUrl",
 ];
 
 function App() {
+	const [adminLoading, setAdminLoading] = useState(false);
+	const [adminError, setAdminError] = useState(null);
 	const [isAuth, setIsAuth] = useState(false);
 	const [products, setProducts] = useState([]);
 	const [adminProducts, setAdminProducts] = useState([]);
@@ -44,6 +46,18 @@ function App() {
 	const adminModalRef = useRef(null);
 	const loginModalRef = useRef(null);
 	const deleteItemModalRef = useRef(null);
+  const uploadImageInutRef = useRef(null);
+
+	// pagination
+	const [pagination, setPagination] = useState({
+		category: "",
+		current_page: 1,
+		has_pre: false,
+		has_next: false,
+		total_pages: 1,
+	});
+
+	const [currentPage, setCurrentPage] = useState(1);
 
 	const getTokenFromCookie = () => {
 		const name = "hexToken=";
@@ -79,7 +93,7 @@ function App() {
 				price: 1,
 				title: "",
 				unit: "",
-        num: 0,
+				num: 0,
 				imageUrl: "",
 				imagesUrl: [],
 				is_enabled: 1,
@@ -209,30 +223,57 @@ function App() {
 		}
 	};
 
-	const getAdminProducts = async () => {
+	const getAdminProducts = async (page = 1) => {
+		setAdminLoading(true);
+		setAdminError(null);
+
 		const token = getTokenFromCookie();
 		if (!token) {
 			console.warn("無 token，無法取得管理員產品");
+			setAdminLoading(false);
 			return;
 		}
 
 		try {
-			const response = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products/all`, {
+			const response = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products?page=${page}`, {
 				headers: { Authorization: `${token}` },
 			});
-			const { products } = response.data;
-			const productArr = Object.keys(products).map((id) => ({
-				id,
-				...products[id],
-			}));
-      console.log(products)
-			setAdminProducts(productArr);
+
+			const { pagination, products } = response.data;
+			// 修正當刪除最後一筆產品時，products 可能為 undefined 的問題
+			// const productsData = response.data?.products ?? {};
+			// const productArr = Object.keys(productsData).map((id) => ({
+			// 	id,
+			// 	...productsData[id],
+			// }));
+
+			setPagination(
+				pagination || {
+					total_pages: 1,
+					current_page: 1,
+					has_pre: false,
+					has_next: false,
+					category: "",
+				}
+			);
+			setCurrentPage(page);
+			// setAdminProducts(productArr || []);
+			setAdminProducts(products || []);
 		} catch (error) {
 			console.error("取得管理員產品列表失敗:", error?.response?.data || error);
+
 			if (error?.response?.status === 401) {
-				alert("401：登入已失效或無權限，請重新登入");
+				setIsAuth(false);
+				setAdminProducts([]);
+				setAdminError("權限不足，請重新登入");
+				alert("Error 401: 權限不足，請重新登入");
 				openModal("login");
+			} else {
+				setAdminError("載入產品失敗，請稍後再試");
 			}
+			setAdminProducts([]); // 清空列表以避免顯示過時資料
+		} finally {
+			setAdminLoading(false);
 		}
 	};
 
@@ -306,7 +347,7 @@ function App() {
 				headers: { Authorization: `${token}` },
 			});
 			alert(`${response.data.message}`);
-			getAdminProducts(); // 重新獲取產品列表
+			getAdminProducts(currentPage); // 重新獲取產品列表
 		} catch (error) {
 			console.error("刪除產品失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "刪除產品失敗");
@@ -331,7 +372,7 @@ function App() {
 					...tempProduct,
 					origin_price: Number(tempProduct.origin_price),
 					price: Number(tempProduct.price),
-          num: Number(tempProduct.num),
+					num: Number(tempProduct.num),
 					is_enabled: tempProduct.is_enabled ? 1 : 0,
 					imagesUrl: (tempProduct.imagesUrl || []).filter((url) => url && url.trim() !== ""),
 					label: (tempProduct.label || []).filter((tag) => tag && tag.trim() !== ""),
@@ -359,12 +400,28 @@ function App() {
 		}
 	};
 
+  const uploadImage = async () => {
+    try {
+      // console.dir(uploadImageInutRef.current)
+      const file = uploadImageInutRef.current.files[0]
+      // console.log(file)
+      const formData = new FormData();
+      formData.append('file-to-upload', file)
+      const response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/upload`, formData)
+      console.log(response.data)
+    } catch (error) {
+      console.error("上傳圖片失敗:", error?.response?.data || error );
+      alert(error?.response?.data?.message || "上傳圖片失敗");
+    }
+
+
+  }
 	useEffect(() => {
 		const token = getTokenFromCookie();
 		if (token) {
 			axios.defaults.headers.common["Authorization"] = `${token}`;
 			setIsAuth(true);
-			getAdminProducts(); // 如果已登入，預載 admin 數據
+			getAdminProducts(currentPage); // 如果已登入，預載 admin 數據
 		}
 
 		getProducts();
@@ -444,7 +501,7 @@ function App() {
 							</button>
 						</div>
 						{products.length === 0 ? (
-							<h2 className="text-center py-5">目前沒有產品資料...</h2>
+							<h2 className="text-center py-5 text-white">目前沒有產品資料...</h2>
 						) : (
 							<div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 row-cols-xl-4 g-4 mb-5">
 								{products.map((item) => (
@@ -492,12 +549,33 @@ function App() {
 								</button>
 							</div>
 						</div>
-						{adminProducts.length === 0 ? (
-							<h2 className="text-center py-5">目前沒有產品資料...</h2>
+						{adminLoading ? (
+							<div className="text-center py-10">
+								<div
+									className="spinner-border text-primary"
+									role="status"
+									style={{ width: "4rem", height: "4rem" }}
+								></div>
+								<h4 className="mt-4 text-primary">正在載入產品資料...</h4>
+							</div>
+						) : adminError ? (
+							<div className="text-center py-10">
+								<div className="alert alert-danger d-inline-block">
+									<h4 className="mb-3">{adminError}</h4>
+									<button className="btn btn-outline-primary" onClick={getAdminProducts}>
+										重新載入
+									</button>
+								</div>
+							</div>
+						) : adminProducts.length === 0 ? (
+							<div className="text-center py-10">
+								<h2 className="text-white-50">目前沒有產品資料</h2>
+								<p className="text-muted mt-3">點擊「新增產品」來建立第一筆資料吧！</p>
+							</div>
 						) : (
-							<div className="table-responsive">
+							<div className="table-responsive overflow-hidden">
 								<div className="d-flex justify-content-between align-items-center mb-3 text-primary">
-									<h4 className="text-primary mb-0">List of products</h4>
+									<h2 className="text-primary mb-0 h6">產品列表</h2>
 									<span>列表數量：{adminProducts.length}</span>
 								</div>
 								<table className="table">
@@ -546,6 +624,43 @@ function App() {
 										))}
 									</tbody>
 								</table>
+							</div>
+						)}
+						{pagination.total_pages > 1 && (
+							<div className="pagination-container mt-5 d-flex justify-content-center align-items-center gap-3 flex-wrap">
+								{/* 上一頁 */}
+								<button
+									className="btn btn-outline-primary pagination-btn"
+									onClick={() => getAdminProducts(currentPage - 1)}
+									disabled={!pagination.has_pre}
+								>
+									<i className="bi bi-chevron-left me-1"></i>上一頁
+								</button>
+
+								{Array.from({ length: pagination.total_pages }, (_, i) => i + 1)
+									.filter((page) => page === 1 || page === pagination.total_pages || Math.abs(page - currentPage) <= 2)
+									.map((page, idx, arr) => (
+										<div key={`page-${idx + 1}`}>
+											{idx > 0 && page - arr[idx - 1] > 1 && <span className="pagination-ellipsis">...</span>}
+											<button 
+												className={`btn pagination-number p-0 d-flex justify-content-center align-items-center rounded-circle ${
+													currentPage === page ? "active" : ""
+												}`}
+												onClick={() => getAdminProducts(page)}
+											>
+												{page}
+											</button>
+										</div>
+									))}
+
+								{/* 下一頁 */}
+								<button
+									className="btn btn-outline-primary pagination-btn"
+									onClick={() => getAdminProducts(currentPage + 1)}
+									disabled={!pagination.has_next}
+								>
+									下一頁<i className="bi bi-chevron-right ms-1"></i>
+								</button>
 							</div>
 						)}
 					</div>
@@ -597,6 +712,7 @@ function App() {
 									<div className="col-md-6">
 										<p className="text-muted small mb-2">分類：{tempProduct.category}</p>
 										<p className="text-muted small mb-2">類別：{tempProduct.subcategory}</p>
+
 										{tempProduct.label && tempProduct.label.length > 0 && (
 											<div className="d-flex flex-wrap gap-2 mb-2">
 												{tempProduct.label.map((tag, i) => (
@@ -606,8 +722,9 @@ function App() {
 												))}
 											</div>
 										)}
-										<p className="mb-3">{tempProduct.description}</p>
-										<p className="text-muted small">內容：{tempProduct.content}</p>
+
+										<div className="mb-3">{tempProduct.description}</div>
+										<div className="text-muted small">內容：{tempProduct.content}</div>
 
 										<div className="my-4">
 											<p className="text-decoration-line-through text-muted">
@@ -618,9 +735,23 @@ function App() {
 											</p>
 										</div>
 
-										<p className="mb-2">
+										<div className="mb-2">
 											庫存：{tempProduct.num} {tempProduct.unit}
-										</p>
+										</div>
+										<div className="mb-2">
+											<div className="d-flex align-items-center">
+												<span>口味:</span>
+												{tempProduct.flavor && tempProduct.flavor.length > 0 && (
+													<>
+														{tempProduct.flavor.map((flavor, i) => (
+															<span key={i} className="badge bg-secondary ms-2">
+																{flavor}
+															</span>
+														))}
+													</>
+												)}
+											</div>
+										</div>
 										<p>
 											狀態：
 											<span className={`badge ms-2 ${tempProduct.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
@@ -713,9 +844,9 @@ function App() {
 												{formErrors.unit && <div className="invalid-feedback">{formErrors.unit}</div>}
 											</div>
 										</div>
-										{/* 原價 + 售價 */}
+										{/* 原價 + 售價 + 庫存 */}
 										<div className="row">
-											<div className="mb-3 col-lg-6">
+											<div className="mb-3 col-lg-5">
 												<label htmlFor="origin_price" className="form-label">
 													原價 <span className="text-danger">*</span>
 												</label>
@@ -730,7 +861,7 @@ function App() {
 												/>
 												{formErrors.origin_price && <div className="invalid-feedback">{formErrors.origin_price}</div>}
 											</div>
-											<div className="mb-3 col-lg-6">
+											<div className="mb-3 col-lg-5">
 												<label htmlFor="price" className="form-label">
 													售價 <span className="text-danger">*</span>
 												</label>
@@ -744,6 +875,20 @@ function App() {
 													onChange={handleModalInputChange}
 												/>
 												{formErrors.price && <div className="invalid-feedback">{formErrors.price}</div>}
+											</div>
+											<div className="mb-3 col-lg-2">
+												<label htmlFor="num" className="form-label">
+													庫存 <span className="text-danger">*</span>
+												</label>
+												<input
+													id="num"
+													type="text"
+													className={`form-control ${formErrors.num ? "is-invalid" : ""}`}
+													placeholder="庫存"
+													value={tempProduct.num ?? ""}
+													onChange={handleModalInputChange}
+												/>
+												{formErrors.num && <div className="invalid-feedback">{formErrors.num}</div>}
 											</div>
 										</div>
 										<hr />
@@ -760,6 +905,7 @@ function App() {
 												onChange={handleModalInputChange}
 											></textarea>
 										</div>
+										{/* 說明內容 */}
 										<div className="mb-3">
 											<label htmlFor="content" className="form-label">
 												說明內容<span className="text-danger">*</span>
@@ -773,6 +919,7 @@ function App() {
 												onChange={handleModalInputChange}
 											></textarea>
 										</div>
+										{/* Enable */}
 										<div className="mb-3">
 											<div className="form-check">
 												<input
@@ -822,9 +969,7 @@ function App() {
 
 												<button
 													type="button"
-													className={`btn btn-outline-primary w-100 ${
-														tempProduct.label?.length >= 3 ? "d-none" : ""
-													}`}
+													className={`btn btn-outline-primary w-100 ${tempProduct.label?.length >= 3 ? "d-none" : ""}`}
 													onClick={() => {
 														const newTags = [...(tempProduct.label || []), ""];
 														setTempProduct((prev) => ({ ...prev, label: newTags }));
@@ -846,6 +991,69 @@ function App() {
 																</span>
 															) : null
 														)}
+													</div>
+												</div>
+											)}
+										</div>
+										{/* 口味管理 */}
+										<div className="mb-3 col-lg-8">
+											<p className="form-label fw-bold">可選口味（可加入）</p>
+
+											<div className="d-flex align-items-center gap-2">
+												{tempProduct?.flavor?.map((flavor, index) => (
+													<div key={index} className="input-group mb-2 mb-lg-0">
+														<input
+															id={`flavor-${index + 1}`}
+															name={`flavor-${index + 1}`}
+															type="text"
+															className="form-control"
+															value={flavor}
+															onChange={(e) => {
+																const newFlavors = [...tempProduct.flavor];
+																newFlavors[index] = e.target.value.trim(); // 自動去除前後空白
+																setTempProduct((prev) => ({ ...prev, flavor: newFlavors }));
+															}}
+															placeholder={`${index + 1} (例如：小辣、辛辣)`}
+														/>
+														<button
+															className="btn btn-outline-danger"
+															type="button"
+															onClick={() => {
+																const newFlavors = tempProduct.flavor.filter((_, i) => i !== index);
+																setTempProduct((prev) => ({ ...prev, flavor: newFlavors }));
+															}}
+														>
+															移除
+														</button>
+													</div>
+												))}
+
+												<button
+													type="button"
+													className={`btn btn-outline-primary w-100 ${tempProduct.flavor?.length >= 2 ? "d-none" : ""}`}
+													onClick={() => {
+														const newFlavors = [...(tempProduct.flavor || []), ""];
+														setTempProduct((prev) => ({ ...prev, flavor: newFlavors }));
+													}}
+												>
+													+ 新增口味
+												</button>
+											</div>
+
+											{/* 簡單預覽（可選） */}
+											{tempProduct?.flavor?.length > 0 && (
+												<div className="mt-3">
+													<div className="d-flex align-items-center gap-2">
+														<small className="text-muted">目前標籤：</small>
+														<div className="d-flex flex-wrap gap-2">
+															{tempProduct.flavor.map((flavor, i) =>
+																flavor.trim() ? (
+																	<span key={i} className="badge bg-info text-white">
+																		{flavor.trim()}
+																	</span>
+																) : null
+															)}
+														</div>
 													</div>
 												</div>
 											)}
@@ -874,11 +1082,17 @@ function App() {
 														className="img-fluid"
 														style={{ maxHeight: "250px", objectFit: "cover", width: "100%" }}
 														onError={(e) => {
-															e.target.src = "https://via.placeholder.com/300x250?text=圖片載入失敗";
+															e.target.src = "https://dummyimage.com/600x400/000/fff&text=dummy";
 														}}
 													/>
 												</div>
 											)}
+											<div className="mt-2">
+												<form action="/api/thisismycourse2/admin/upload" encType="multipart/form-data" method="post">
+                          <input type="file" name="file-to-upload" ref={uploadImageInutRef} className="btn btn-outline-primary" onChange={() => uploadImage()} />
+                          {/* <input type="submit" value="Upload" className="btn btn-outline-primary" on /> */}
+												</form>
+											</div>
 										</div>
 
 										{/* 多張附圖管理 */}
