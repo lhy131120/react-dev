@@ -114,6 +114,11 @@ h4 {
   letter-spacing: -0.5px;
 }
 
+input[type="file"],
+input[type="file"] + .btn {
+  transform: scale(1);
+}
+
 .text-primary {
   color: #a78bfa !important;
 }

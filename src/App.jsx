@@ -402,19 +402,20 @@ function App() {
 
   const uploadImage = async () => {
     try {
-      // console.dir(uploadImageInutRef.current)
       const file = uploadImageInutRef.current.files[0]
-      // console.log(file)
       const formData = new FormData();
       formData.append('file-to-upload', file)
       const response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/upload`, formData)
-      console.log(response.data)
+      const { imageUrl } = response.data;
+
+			setTempProduct({
+				...tempProduct,
+				imageUrl
+			})
     } catch (error) {
       console.error("上傳圖片失敗:", error?.response?.data || error );
       alert(error?.response?.data?.message || "上傳圖片失敗");
     }
-
-
   }
 	useEffect(() => {
 		const token = getTokenFromCookie();
@@ -489,15 +490,15 @@ function App() {
 			<div className="container py-5">
 				<div className="row">
 					<div className="col-12 text-center mb-4">
-						<p className="fw-bold text-primary">Login Status: {isAuth ? "已登入" : "未登入"}</p>
+						<p className="fw-bold text-primary">登入狀態: {isAuth ? "已登入" : "未登入"}</p>
 					</div>
 				</div>
 				{viewMode === "products" && (
 					<div>
 						<div className="d-flex mb-5 justify-content-between align-items-center">
-							<h1 className="fs-4 fw-bold text-primary">Product List</h1>
+							<h1 className="fs-4 fw-bold text-primary">產品列表</h1>
 							<button type="button" className="btn btn-primary" onClick={showAdminDashboard}>
-								Show Dashboard
+								前住儀表板
 							</button>
 						</div>
 						{products.length === 0 ? (
@@ -536,7 +537,7 @@ function App() {
 				{viewMode === "dashboard" && (
 					<div>
 						<div className="d-flex mb-5 justify-content-between align-items-center">
-							<h1 className="fs-4 fw-bold text-primary">Dashboard</h1>
+							<h1 className="fs-4 fw-bold text-primary">儀表板</h1>
 							<div className="d-flex gap-2">
 								<button type="button" className="btn btn-secondary" onClick={showProductsArea}>
 									回前台
@@ -1089,8 +1090,10 @@ function App() {
 											)}
 											<div className="mt-2">
 												<form action="/api/thisismycourse2/admin/upload" encType="multipart/form-data" method="post">
-                          <input type="file" name="file-to-upload" ref={uploadImageInutRef} className="btn btn-outline-primary" onChange={() => uploadImage()} />
-                          {/* <input type="submit" value="Upload" className="btn btn-outline-primary" on /> */}
+													<div className="input-group flex-nowrap">
+														<input type="file" className="form-control btn btn-outline-primary" id="uploadImageInput" name="file-to-upload" ref={uploadImageInutRef}  aria-describedby="uploadImageButton" aria-label="Upload" />
+														<button className="btn btn-outline-secondary" type="button" id="uploadImageButton" onClick={uploadImage}>上傳</button>
+													</div>
 												</form>
 											</div>
 										</div>
