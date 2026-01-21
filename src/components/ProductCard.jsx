@@ -1,4 +1,4 @@
-export default function ProductCard({ product, openModal }) {
+const ProductCard = ({ product, openModal }) => {
 	return (
 		<div className="col">
 			<div className="card h-100 shadow-sm hover-shadow transition">
@@ -24,4 +24,6 @@ export default function ProductCard({ product, openModal }) {
 			</div>
 		</div>
 	);
-}
+};
+
+export default ProductCard;

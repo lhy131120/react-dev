@@ -299,7 +299,7 @@ function App() {
 			axios.defaults.headers.common["Authorization"] = `${token}`;
 
 			setIsAuth(true);
-			loginModalInstance.current?.hide();
+			loginModalRef.current?.hide();
 
 			// 如果有 pending action，執行它
 			if (pendingAction === "showDashboard") {
@@ -488,20 +488,7 @@ function App() {
 				
 				{viewMode === "dashboard" && (
 					<div>
-						<div className="d-flex mb-5 justify-content-between align-items-center">
-							<h1 className="fs-4 fw-bold text-primary">儀表板</h1>
-							<div className="d-flex gap-2">
-								<button type="button" className="btn btn-secondary" onClick={showProductsArea}>
-									回前台
-								</button>
-								<button type="button" className="btn btn-danger" onClick={() => handleLogout()}>
-									登出
-								</button>
-								<button type="button" className="btn btn-success" onClick={() => openModal("newItem")}>
-									新增產品
-								</button>
-							</div>
-						</div>
+						<AdminHeader showProductsArea={showProductsArea} handleLogout={handleLogout} openModal={openModal} />
 
 						{adminLoading ? (
 							<div className="text-center py-10">

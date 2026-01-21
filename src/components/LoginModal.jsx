@@ -1,4 +1,3 @@
-// components/LoginModal.jsx
 import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Modal } from "bootstrap";
 
@@ -21,6 +20,8 @@ const LoginModal = forwardRef(({ loginData, handleInputChange, handleSubmit, onC
 		show: () => modalInstance.current?.show(),
 		hide: () => modalInstance.current?.hide(),
 	}));
+
+  
 
 	return (
 		<div className="modal fade" ref={modalEl} tabIndex="-1">
