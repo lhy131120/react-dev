@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import api, { authApi } from './api/axiosInstance.js';
 import "./App.css";
 
 import ProductList from "./components/ProductList";
@@ -66,19 +67,6 @@ function App() {
 	// ────────────────────────────────────────────────
 	//  Utility Functions
 	// ────────────────────────────────────────────────
-	const getTokenFromCookie = () => {
-		const name = "hexToken=";
-		const decodedCookie = decodeURIComponent(document.cookie);
-		const ca = decodedCookie.split(";");
-		for (let i = 0; i < ca.length; i++) {
-			let c = ca[i].trim();
-			if (c.indexOf(name) === 0) {
-				return c.substring(name.length, c.length);
-			}
-		}
-		return "";
-	};
-
 	const openModal = (type, item = null) => {
 		if (type === "edit" || type === "newItem") {
 			setFormErrors({});
@@ -220,7 +208,7 @@ function App() {
 
 	const getProducts = async () => {
 		try {
-			const response = await axios.get(`${API_BASE}/api/${API_PATH}/products/all`);
+			const response = await api.get('/products/all');
 			const { products } = response.data;
 			const productArr = Object.keys(products).map((id) => ({
 				id,
@@ -236,17 +224,8 @@ function App() {
 		setAdminLoading(true);
 		setAdminError(null);
 
-		const token = getTokenFromCookie();
-		if (!token) {
-			console.warn("無 token，無法取得管理員產品");
-			setAdminLoading(false);
-			return;
-		}
-
 		try {
-			const response = await axios.get(`${API_BASE}/api/${API_PATH}/admin/products?page=${page}`, {
-				headers: { Authorization: `${token}` },
-			});
+			const response = await api.get(`/admin/products?page=${page}`);
 
 			const { pagination, products } = response.data;
 			// 修正當刪除最後一筆產品時，products 可能為 undefined 的問題
@@ -279,7 +258,7 @@ function App() {
 			} else {
 				setAdminError("載入產品失敗，請稍後再試");
 			}
-			setAdminProducts([]); // 清空列表以避免顯示過時資料
+			setAdminProducts([]); // clear old data
 		} finally {
 			setAdminLoading(false);
 		}
@@ -293,6 +272,7 @@ function App() {
 			const { token, expired } = response.data;
 
 			// 設定 cookie
+			document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; // 先清一次
 			document.cookie = `hexToken=${token}; expires=${new Date(expired).toUTCString()}; path=/`;
 
 			// 設定 headers for future requests
@@ -330,31 +310,32 @@ function App() {
 
 	const handleLogout = async () => {
 		try {
-			const response = await axios.post(`${API_BASE}/logout`);
-			console.log(response.data.message);
-			document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-			axios.defaults.headers.common["Authorization"] = null;
-			setIsAuth(false);
-			setViewMode("products");
-			getProducts();
+			await authApi.post("/logout");
+			console.log("登出成功");
 		} catch (error) {
-			console.error("登出失敗:", error?.response?.data || error);
+			if (error.response?.status === 400 && error.response?.data?.message === "請重新登出") {
+				console.log("後端表示已登出");
+			} else {
+				console.error("登出失敗:", error);
+			}
 		}
+
+		// 本地強制清理
+		document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+		delete axios.defaults.headers.common["Authorization"];
+		setIsAuth(false);
+		setViewMode("products");
+		getProducts();
+
+		alert("已登出");
 	};
 
 	const handleDeleteItem = async (id) => {
-		const token = getTokenFromCookie();
-		if (!token) {
-			console.warn("無 token，無法刪除產品");
-			return;
-		}
 
 		try {
-			const response = await axios.delete(`${API_BASE}/api/${API_PATH}/admin/product/${id}`, {
-				headers: { Authorization: `${token}` },
-			});
+			const response = await api.delete(`/admin/product/${id}`);
 			alert(`${response.data.message}`);
-			getAdminProducts(currentPage); // 重新獲取產品列表
+			getAdminProducts(currentPage); 
 		} catch (error) {
 			console.error("刪除產品失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "刪除產品失敗");
@@ -362,12 +343,6 @@ function App() {
 	};
 
 	const updateProduct = async () => {
-		const token = getTokenFromCookie();
-		if (!token) {
-			console.warn("無 token，無法更新/新增產品");
-			return;
-		}
-
 		if (!validateForm()) {
 			alert("請修正表單中的錯誤");
 			return;
@@ -389,13 +364,9 @@ function App() {
 			let response;
 
 			if (tempProduct.id) {
-				response = await axios.put(`${API_BASE}/api/${API_PATH}/admin/product/${tempProduct.id}`, payload, {
-					headers: { Authorization: `${token}` },
-				});
+				response = await api.put(`/admin/product/${tempProduct.id}`, payload);
 			} else {
-				response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/product`, payload, {
-					headers: { Authorization: `${token}` },
-				});
+				response = await api.post(`/admin/product`, payload);
 			}
 
 			alert(response.data.message || "操作成功");
@@ -412,7 +383,7 @@ function App() {
 			const file = uploadImageInputRef.current.files[0];
 			const formData = new FormData();
 			formData.append("file-to-upload", file);
-			const response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/upload`, formData);
+			const response = await api.post('/admin/upload', formData);
 			const { imageUrl } = response.data;
 
 			setTempProduct({
@@ -434,11 +405,7 @@ function App() {
 			const formData = new FormData();
 			formData.append("file-to-upload", selectedFile);
 
-			const response = await axios.post(`${API_BASE}/api/${API_PATH}/admin/upload`, formData, {
-				headers: {
-					Authorization: `${getTokenFromCookie()}`,
-				},
-			});
+			const response = await api.post('/admin/upload', formData);
 
 			const { imageUrl } = response.data;
 
@@ -464,13 +431,13 @@ function App() {
 	};
 
 	useEffect(() => {
-		const token = getTokenFromCookie();
-		if (token) {
-			axios.defaults.headers.common["Authorization"] = `${token}`;
+		// const token = getTokenFromCookie();
+    getProducts();
+    
+		if (document.cookie.includes("hexToken=")) {
 			setIsAuth(true);
 			getAdminProducts(currentPage);
 		}
-		getProducts();
 
 	}, []);
 

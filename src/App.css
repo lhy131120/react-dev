@@ -161,6 +161,10 @@ input[type="file"] + .btn {
   box-shadow: 0 12px 30px rgba(167, 139, 250, 0.4);
 }
 
+.modal .btn {
+  transform: scale(1);
+}
+
 .modal .btn:hover {
   transform: none;
   color: #fff;

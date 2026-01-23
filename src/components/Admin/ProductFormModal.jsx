@@ -3,72 +3,75 @@ import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { Modal } from "bootstrap";
 
 const ProductFormModal = forwardRef(
-  (
-    {
-      tempProduct,
-      setTempProduct,
-      formErrors,
-      handleModalInputChange,
-      updateProduct,
-      closeModal,
-      uploadingImages,
-      setUploadingImages,
-      previewImage,
-      setPreviewImage,
-      selectedFile,
-      setSelectedFile,
-      isUploading,
-      uploadImageInputRef,
-      uploadImage,          // 單張主要圖片上傳（舊版）
-      handleUploadImage,    // 多張附加圖片上傳（新版）
-    },
-    ref
-  ) => {
-    const modalEl = useRef(null);
-    const modalInstance = useRef(null);
+	(
+		{
+			tempProduct,
+			setTempProduct,
+			formErrors,
+			handleModalInputChange,
+			updateProduct,
+			closeModal,
+			uploadingImages,
+			setUploadingImages,
+			previewImage,
+			setPreviewImage,
+			selectedFile,
+			setSelectedFile,
+			isUploading,
+			uploadImageInputRef,
+			uploadImage,
+			handleUploadImage,
+		},
+		ref
+	) => {
+		const modalEl = useRef(null);
+		const modalInstance = useRef(null);
 
-    // 初始化與銷毀 Bootstrap Modal
-    useEffect(() => {
-      if (!modalEl.current) return;
+		// 初始化與銷毀 Bootstrap Modal
+		useEffect(() => {
+			if (!modalEl.current) return;
 
-      modalInstance.current = new Modal(modalEl.current, {
-        keyboard: true,
-        backdrop: true,
-      });
+			modalInstance.current = new Modal(modalEl.current, {
+				keyboard: true,
+				backdrop: true,
+			});
 
-      // 當 modal 完全顯示後處理焦點與無障礙屬性
-      const handleShown = () => {
-        modalEl.current.removeAttribute("aria-hidden"); 
-        modalEl.current.querySelector(".btn-close")?.focus();
-      };
+			const handleShown = () => {
+				modalEl.current.removeAttribute("aria-hidden");
+				modalEl.current.inert = false;
+				const firstFocusable = modalEl.current.querySelector(
+					".btn-close, input:not([disabled]), textarea:not([disabled]), button:not([disabled])"
+				);
+				firstFocusable?.focus();
+			};
 
-      // 關閉時清理 inert
-      const handleHide = () => {
-        document.body.inert = false;
-        modalEl.current?.removeAttribute("inert");
-      };
+			const handleHide = () => {
+				modalEl.current?.removeAttribute("inert");
+			};
 
-      // 綁定 Bootstrap 事件
-      modalEl.current.addEventListener("shown.bs.modal", handleShown);
-      modalEl.current.addEventListener("hide.bs.modal", handleHide);
+			// 綁定 Bootstrap 事件
+			modalEl.current.addEventListener("shown.bs.modal", handleShown);
+			modalEl.current.addEventListener("hide.bs.modal", handleHide);
+			modalEl.current.addEventListener("hidden.bs.modal", handleHide);
 
-      // Cleanup：移除事件監聽 + 銷毀 Modal 實例
-      return () => {
-        modalInstance.current?.dispose();
-        modalEl.current.removeEventListener("shown.bs.modal", handleShown);
-        modalEl.current.removeEventListener("hide.bs.modal", handleHide);
-      };
-    }, []);
+			// Cleanup：移除事件監聽 + 銷毀 Modal 實例
+			return () => {
+				modalInstance.current?.dispose();
+				modalEl.current.removeEventListener("shown.bs.modal", handleShown);
+				modalEl.current.removeEventListener("hide.bs.modal", handleHide);
+				modalEl.current.removeEventListener("hidden.bs.modal", handleHide);
+			};
+		}, []);
 
-    useImperativeHandle(ref, () => ({
-      show: () => modalInstance.current?.show(),
-      hide: () => modalInstance.current?.hide(),
-    }));
+		useImperativeHandle(ref, () => ({
+			show: () => modalInstance.current?.show(),
+			hide: () => modalInstance.current?.hide(),
+		}));
 
-    // 根據是否有 id 判斷是「編輯」還是「新增」
-    const modalTitle = tempProduct?.id ? "編輯產品" : "新增產品";
+		// 根據是否有 id 判斷是「編輯」還是「新增」
+		const modalTitle = tempProduct?.id ? "編輯產品" : "新增產品";
 
-    return (
+		return (
 			<div className="modal fade" ref={modalEl} tabIndex="-1">
 				<div className="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-xl-down modal-dialog-scrollable">
 					<div className="modal-content">
@@ -262,7 +265,10 @@ const ProductFormModal = forwardRef(
 															onChange={(e) => {
 																const newTags = [...tempProduct.label];
 																newTags[index] = e.target.value.trim();
-																setTempProduct((prev) => ({ ...prev, label: newTags }));
+																setTempProduct((prev) => ({
+																	...prev,
+																	label: newTags,
+																}));
 															}}
 															placeholder={`${index + 1} (例如：熱銷、限時)`}
 														/>
@@ -271,7 +277,10 @@ const ProductFormModal = forwardRef(
 															type="button"
 															onClick={() => {
 																const newTags = tempProduct.label.filter((_, i) => i !== index);
-																setTempProduct((prev) => ({ ...prev, label: newTags }));
+																setTempProduct((prev) => ({
+																	...prev,
+																	label: newTags,
+																}));
 															}}
 														>
 															移除
@@ -284,7 +293,10 @@ const ProductFormModal = forwardRef(
 													className={`btn btn-outline-primary ${tempProduct?.label?.length >= 3 ? "d-none" : ""}`}
 													onClick={() => {
 														const newTags = [...(tempProduct?.label || []), ""];
-														setTempProduct((prev) => ({ ...prev, label: newTags }));
+														setTempProduct((prev) => ({
+															...prev,
+															label: newTags,
+														}));
 													}}
 												>
 													+ 新增標籤
@@ -308,67 +320,74 @@ const ProductFormModal = forwardRef(
 											)}
 										</div>
 
-										{/* 口味管理（可選，若不需要可刪除此區塊） */}
-										{tempProduct?.flavor !== undefined && (
-											<div className="mb-3">
-												<p className="form-label fw-bold">可選口味（可加入）</p>
+										{/* 口味管理 */}
+										<div className="mb-3">
+											<p className="form-label fw-bold">可選口味（可加入）</p>
 
-												<div className="d-flex flex-column gap-2">
-													{tempProduct?.flavor?.map((flavor, index) => (
-														<div key={index} className="input-group">
-															<input
-																type="text"
-																className="form-control"
-																value={flavor}
-																onChange={(e) => {
-																	const newFlavors = [...tempProduct.flavor];
-																	newFlavors[index] = e.target.value.trim();
-																	setTempProduct((prev) => ({ ...prev, flavor: newFlavors }));
-																}}
-																placeholder={`${index + 1} (例如：小辣、辛辣)`}
-															/>
-															<button
-																className="btn btn-outline-danger"
-																type="button"
-																onClick={() => {
-																	const newFlavors = tempProduct.flavor.filter((_, i) => i !== index);
-																	setTempProduct((prev) => ({ ...prev, flavor: newFlavors }));
-																}}
-															>
-																移除
-															</button>
-														</div>
-													))}
-
-													<button
-														type="button"
-														className={`btn btn-outline-primary ${tempProduct?.flavor?.length >= 2 ? "d-none" : ""}`}
-														onClick={() => {
-															const newFlavors = [...(tempProduct?.flavor || []), ""];
-															setTempProduct((prev) => ({ ...prev, flavor: newFlavors }));
-														}}
-													>
-														+ 新增口味
-													</button>
-												</div>
-
-												{tempProduct?.flavor?.length > 0 && (
-													<div className="mt-3">
-														<small className="text-muted">目前口味預覽：</small>
-														<div className="d-flex flex-wrap gap-2 mt-1">
-															{tempProduct.flavor.map(
-																(flavor, i) =>
-																	flavor?.trim() && (
-																		<span key={i} className="badge bg-info text-white">
-																			{flavor.trim()}
-																		</span>
-																	)
-															)}
-														</div>
+											<div className="d-flex flex-column gap-2">
+												{tempProduct?.flavor?.map((flavor, index) => (
+													<div key={index} className="input-group">
+														<input
+															type="text"
+															className="form-control"
+															value={flavor}
+															onChange={(e) => {
+																const newFlavors = [...tempProduct.flavor];
+																newFlavors[index] = e.target.value.trim();
+																setTempProduct((prev) => ({
+																	...prev,
+																	flavor: newFlavors,
+																}));
+															}}
+															placeholder={`${index + 1} (例如：小辣、辛辣)`}
+														/>
+														<button
+															className="btn btn-outline-danger"
+															type="button"
+															onClick={() => {
+																const newFlavors = tempProduct.flavor.filter((_, i) => i !== index);
+																setTempProduct((prev) => ({
+																	...prev,
+																	flavor: newFlavors,
+																}));
+															}}
+														>
+															移除
+														</button>
 													</div>
-												)}
+												))}
+
+												<button
+													type="button"
+													className={`btn btn-outline-primary ${tempProduct?.flavor?.length >= 2 ? "d-none" : ""}`}
+													onClick={() => {
+														const newFlavors = [...(tempProduct?.flavor || []), ""];
+														setTempProduct((prev) => ({
+															...prev,
+															flavor: newFlavors,
+														}));
+													}}
+												>
+													+ 新增口味
+												</button>
 											</div>
-										)}
+
+											{tempProduct?.flavor?.length > 0 && (
+												<div className="mt-3">
+													<small className="text-muted">目前口味預覽：</small>
+													<div className="d-flex flex-wrap gap-2 mt-1">
+														{tempProduct.flavor.map(
+															(flavor, i) =>
+																flavor?.trim() && (
+																	<span key={i} className="badge bg-info text-white">
+																		{flavor.trim()}
+																	</span>
+																)
+														)}
+													</div>
+												</div>
+											)}
+										</div>
 									</div>
 
 									{/* 右側：圖片管理區 */}
@@ -461,7 +480,10 @@ const ProductFormModal = forwardRef(
 														type="button"
 														onClick={() => {
 															const newImages = tempProduct.imagesUrl.filter((_, i) => i !== index);
-															setTempProduct((prev) => ({ ...prev, imagesUrl: newImages }));
+															setTempProduct((prev) => ({
+																...prev,
+																imagesUrl: newImages,
+															}));
 														}}
 													>
 														×
@@ -569,7 +591,7 @@ const ProductFormModal = forwardRef(
 				</div>
 			</div>
 		);
-  }
+	}
 );
 
 export default ProductFormModal;
