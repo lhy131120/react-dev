@@ -84,6 +84,8 @@ const ProductFormModal = forwardRef(
 							/>
 						</div>
 
+            {JSON.stringify(tempProduct)}
+
 						<div className="modal-body">
 							{tempProduct && (
 								<div className="row flex-row-reverse g-4">
@@ -193,7 +195,9 @@ const ProductFormModal = forwardRef(
 												</label>
 												<input
 													id="num"
-													type="text"
+													type="number"
+                          min="0"
+                          step="1"
 													className={`form-control ${formErrors.num ? "is-invalid" : ""}`}
 													placeholder="庫存"
 													value={tempProduct.num ?? ""}
@@ -401,7 +405,7 @@ const ProductFormModal = forwardRef(
 												id="imageUrl"
 												type="url"
 												className="form-control mb-2"
-												placeholder="https://example.com/main.jpg"
+												placeholder="請上傳最少一張圖片"
 												value={tempProduct.imageUrl || ""}
 												onChange={handleModalInputChange}
 											/>
@@ -418,7 +422,7 @@ const ProductFormModal = forwardRef(
 															width: "100%",
 														}}
 														onError={(e) => {
-															e.target.src = "https://dummyimage.com/600x400/000/fff&text=dummy";
+															e.target.src = "https://placehold.co/600x400?text=No+Image";
 														}}
 													/>
 												</div>

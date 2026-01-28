@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import api, { authApi } from './api/axiosInstance.js';
+import api, { authApi } from "./api/axiosInstance.js";
 import "./App.css";
 
 import ProductList from "./components/ProductList";
@@ -89,7 +89,7 @@ function App() {
 				title: "",
 				unit: "",
 				num: 0,
-				imageUrl: "",
+				imageUrl: "https://placehold.co/600x400?text=No+Image",
 				imagesUrl: [],
 				is_enabled: 1,
 				label: [],
@@ -103,8 +103,6 @@ function App() {
 		} else {
 			console.warn("未知的 modal type:", type);
 		}
-
-    
 	};
 
 	// 修正後的 closeModal：只呼叫 ref.hide() + 執行清理
@@ -114,6 +112,14 @@ function App() {
 		} else if (type === "edit" || type === "newItem") {
 			adminModalRef.current?.hide();
 			setFormErrors({});
+			// ★ 新增：關閉 admin modal 時，重設圖片上傳相關 state
+			setUploadingImages(false);
+			setPreviewImage(null);
+			setSelectedFile(null);
+			setIsUploading(false);
+      if (uploadImageInputRef.current) {
+				uploadImageInputRef.current.value = "";
+			} 
 		} else if (type === "delete") {
 			deleteModalRef.current?.hide();
 		} else if (type === "login") {
@@ -122,6 +128,10 @@ function App() {
 
 		// 所有 modal 關閉後統一清空 tempProduct（視需求可調整）
 		setTempProduct(null);
+
+		if (uploadImageInputRef.current) {
+			uploadImageInputRef.current.value = ""; // 清空 input
+		}
 	};
 
 	const handleInputChange = (e) => {
@@ -138,8 +148,10 @@ function App() {
 		let newValue = type === "checkbox" ? (checked ? 1 : 0) : value;
 
 		// 數字欄位強制轉 number
-		if (["origin_price", "price"].includes(id)) {
+		if (["origin_price", "price", "num"].includes(id)) {
 			newValue = value === "" ? "" : Number(value);
+			// 如果是 NaN，強制設為 0 或保持原值
+			if (isNaN(newValue)) newValue = 0;
 		}
 
 		setTempProduct((prev) => ({
@@ -208,7 +220,7 @@ function App() {
 
 	const getProducts = async () => {
 		try {
-			const response = await api.get('/products/all');
+			const response = await api.get("/products/all");
 			const { products } = response.data;
 			const productArr = Object.keys(products).map((id) => ({
 				id,
@@ -311,10 +323,10 @@ function App() {
 	const handleLogout = async () => {
 		try {
 			await authApi.post("/logout");
-			console.log("登出成功");
+			alert("登出成功");
 		} catch (error) {
 			if (error.response?.status === 400 && error.response?.data?.message === "請重新登出") {
-				console.log("後端表示已登出");
+				alert("後端表示已登出");
 			} else {
 				console.error("登出失敗:", error);
 			}
@@ -331,11 +343,10 @@ function App() {
 	};
 
 	const handleDeleteItem = async (id) => {
-
 		try {
 			const response = await api.delete(`/admin/product/${id}`);
 			alert(`${response.data.message}`);
-			getAdminProducts(currentPage); 
+			getAdminProducts(currentPage);
 		} catch (error) {
 			console.error("刪除產品失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "刪除產品失敗");
@@ -354,7 +365,8 @@ function App() {
 					...tempProduct,
 					origin_price: Number(tempProduct.origin_price),
 					price: Number(tempProduct.price),
-					num: Number(tempProduct.num),
+					// num: Number(tempProduct.num),
+					num: Math.floor(Number(tempProduct.num)) || 0,
 					is_enabled: tempProduct.is_enabled ? 1 : 0,
 					imagesUrl: (tempProduct.imagesUrl || []).filter((url) => url && url.trim() !== ""),
 					label: (tempProduct.label || []).filter((tag) => tag && tag.trim() !== ""),
@@ -369,21 +381,31 @@ function App() {
 				response = await api.post(`/admin/product`, payload);
 			}
 
+			console.log("送出的 payload.num:", payload.data.num, typeof payload.data.num);
+
 			alert(response.data.message || "操作成功");
 			closeModal(tempProduct.id ? "edit" : "newItem");
-			getAdminProducts();
+
+			// getAdminProducts();
+
+			/* ===== 測試用 ===== */
+			await getAdminProducts(currentPage);
+			const updatedItem = adminProducts.find((p) => p.id === tempProduct.id);
+			console.log("更新後前端看到的 num:", updatedItem?.num);
+			/* ===== 測試用 ===== */
+
 		} catch (error) {
 			console.error("更新/新增產品失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "操作失敗");
 		}
-	};
+	};;
 
 	const uploadImage = async () => {
 		try {
 			const file = uploadImageInputRef.current.files[0];
 			const formData = new FormData();
 			formData.append("file-to-upload", file);
-			const response = await api.post('/admin/upload', formData);
+			const response = await api.post("/admin/upload", formData);
 			const { imageUrl } = response.data;
 
 			setTempProduct({
@@ -405,7 +427,7 @@ function App() {
 			const formData = new FormData();
 			formData.append("file-to-upload", selectedFile);
 
-			const response = await api.post('/admin/upload', formData);
+			const response = await api.post("/admin/upload", formData);
 
 			const { imageUrl } = response.data;
 
@@ -420,10 +442,10 @@ function App() {
 			console.error("上傳圖片失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "上傳圖片失敗");
 		} finally {
-			setIsUploading(false);
 			setUploadingImages(false); // 上傳完自動關閉區塊
 			setPreviewImage(null);
 			setSelectedFile(null);
+			setIsUploading(false);
 			if (uploadImageInputRef.current) {
 				uploadImageInputRef.current.value = ""; // 清空 input
 			}
@@ -432,13 +454,12 @@ function App() {
 
 	useEffect(() => {
 		// const token = getTokenFromCookie();
-    getProducts();
-    
+		getProducts();
+
 		if (document.cookie.includes("hexToken=")) {
 			setIsAuth(true);
 			getAdminProducts(currentPage);
 		}
-
 	}, []);
 
 	return (
@@ -452,7 +473,7 @@ function App() {
 				{viewMode === "products" && (
 					<ProductList products={products} openModal={openModal} showAdminDashboard={showAdminDashboard} />
 				)}
-				
+
 				{viewMode === "dashboard" && (
 					<div>
 						<AdminHeader showProductsArea={showProductsArea} handleLogout={handleLogout} openModal={openModal} />
