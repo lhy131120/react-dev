@@ -11,3 +11,101 @@ $dark: #0f0c29;
 @import './variables';
 
 @import 'bootstrap/scss/bootstrap';
+
+// 購物車數量選擇器 - 自訂 select
+.cart-qty-select {
+  // 基本重置與尺寸
+  appearance: none;           // 移除原生下拉箭頭
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  
+  width: 70px;                // 適合放 1~20 的數字
+  height: 32px;
+  padding: 0 28px 0 12px;     // 右邊留空間給自訂箭頭
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: $dark;
+  background-color: white;
+  border: 1px solid $secondary;   // 淺紫邊框
+  border-radius: 6px;
+  
+  // 文字置中或偏左
+  text-align: center;
+  
+  // 避免藍色外框（常見在 focus 時）
+  outline: none;
+  
+  // 自訂下拉箭頭（使用 background 或偽元素）
+  background-image: 
+    linear-gradient(45deg, transparent 50%, $primary 50%),
+    linear-gradient(135deg, $primary 50%, transparent 50%);
+  background-position: 
+    calc(100% - 12px) 50%, 
+    calc(100% - 8px) 50%;
+  background-size: 
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  
+  // hover 與 focus 狀態
+  &:hover {
+    border-color: $primary;
+    // background-color: rgba($primary, 0.05);
+    cursor: pointer;
+  }
+  
+  &:focus,
+  &:focus-visible {
+    border-color: $primary;
+    box-shadow: 0 0 0 3px rgba($primary, 0.25);
+    background-color: white;
+  }
+  
+  // disabled 狀態
+  &:disabled {
+    background-color: $light;
+    color: mix($dark, white, 40%);
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  // 選項樣式（部分瀏覽器支援）
+  option {
+    background: white;
+    color: $dark;
+    
+    &:checked,
+    &:hover {
+      background: rgba($primary, 0.15);
+    }
+  }
+}
+
+// 如果你想讓 + / - 按鈕與 select 更協調，也可以一起自訂
+.cart-qty-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  background-color: $secondary;
+  border: none;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  
+  &:hover {
+    background-color: $primary;
+    transform: translateY(-1px);
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

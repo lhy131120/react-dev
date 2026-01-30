@@ -1,0 +1,299 @@
+import api from "../../api/axiosInstance.js";
+import { useEffect, useState, useCallback } from "react";
+import { toast } from "react-toastify";
+
+const Cart = () => {
+	const [tempCarts, setTempCarts] = useState([]);
+	const [cartTotal, setcartTotal] = useState(null);
+	const [finalTotal, setFinalTotal] = useState(null);
+	const [updatingCarts, setUpdatingCarts] = useState(new Set());
+
+	const [isClearingAll, setIsClearingAll] = useState(false);
+
+	const getCart = useCallback(async () => {
+		try {
+			const response = await api.get(`/cart`);
+			const { final_total, total, carts } = response.data.data;
+
+			setTempCarts([...carts]);
+			setcartTotal(total);
+			setFinalTotal(final_total);
+
+			toast.success(`取得購物車成功!`, {
+				autoClose: 4000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				theme: "colored",
+			});
+		} catch (error) {
+			toast.error(`取得購物車失敗: ${error.response?.data?.message}`, {
+				autoClose: 4000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				theme: "colored",
+			});
+		}
+	}, []);
+
+	const handleUpdateQty = async (cartId, newQty) => {
+		// 轉型Number
+		const safeQty = Math.max(1, Number(newQty));
+		if (isNaN(safeQty) || safeQty < 1) return;
+
+		const cartItem = tempCarts.find((item) => item.id === cartId);
+		if (!cartItem) return;
+
+		if (safeQty === cartItem.qty) return;
+
+		setTempCarts((prevCarts) => prevCarts.map((item) => (item.id === cartId ? { ...item, qty: safeQty } : item)));
+		setUpdatingCarts((prev) => new Set([...prev, cartId]));
+
+		try {
+			const payload = {
+				data: {
+					product_id: cartItem.product?.id,
+					qty: safeQty,
+				},
+			};
+
+			const response = await api.put(`/cart/${cartId}`, payload);
+
+			await getCart(); // 如果後端有其他計算（如折扣），建議重新拉一次
+
+			// console.log(`購物車項目 ${cartId} 數量更新為 ${safeQty}`);
+
+			toast.success(`${response.data?.message || "成功更新"}!`, {
+				autoClose: 3000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				theme: "colored",
+			});
+			// console.log(response.data.message)
+		} catch (error) {
+			// 失敗時回滾 UI
+			setTempCarts((prevCarts) =>
+				prevCarts.map((item) => (item.id === cartId ? { ...item, qty: cartItem.qty } : item))
+			);
+
+			toast.error(`更新購物車數量失敗: ${error.response?.data?.message}`, {
+				autoClose: 4000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				theme: "colored",
+			});
+		} finally {
+			// 結束 loading 狀態
+			setUpdatingCarts((prev) => {
+				const next = new Set(prev);
+				next.delete(cartId);
+				return next;
+			});
+		}
+	};
+
+	const handleRemoveCart = async (cartId) => {
+		// 先檢查是否已在處理中，避免重複點擊
+		if (updatingCarts.has(cartId)) return;
+
+		// 樂觀移除（可選，但推薦：感覺更快）
+		const removedItem = tempCarts.find((item) => item.id === cartId);
+		setTempCarts((prev) => prev.filter((item) => item.id !== cartId));
+
+		// 標記正在刪除
+		setUpdatingCarts((prev) => new Set([...prev, cartId]));
+
+		try {
+			const response = await api.delete(`/cart/${cartId}`);
+
+			toast.success(`產品已移除！${response.data.message || ""}`, {
+				autoClose: 3000,
+			});
+
+			// 重新載入最新資料（確保後端一致）
+			await getCart();
+		} catch (error) {
+			// 失敗 → 回滾 UI
+			if (removedItem) {
+				setTempCarts((prev) => [...prev, removedItem]); // 放回原位（或依序插入）
+			}
+
+			toast.error(`刪除失敗：${error.response?.data?.message || "請稍後再試"}`, {
+				autoClose: 4000,
+			});
+		} finally {
+			// 移除 loading 標記
+			setUpdatingCarts((prev) => {
+				const next = new Set(prev);
+				next.delete(cartId);
+				return next;
+			});
+		}
+	};
+
+	const handleRemoveAllCart = async () => {
+		if (isClearingAll || tempCarts.length === 0) return;
+
+		// 錯誤時回復用
+		const backupCarts = [...tempCarts];
+		const backupTotal = cartTotal;
+		const backupFinalTotal = finalTotal;
+
+		setTempCarts([]);
+		setcartTotal(0);
+		setFinalTotal(0);
+		setIsClearingAll(true);
+
+		try {
+			const response = await api.delete(`/carts`);
+
+			toast.success(`購物車已清空！${response.data.message || ""}`, {
+				autoClose: 4000,
+				hideProgressBar: false,
+				closeOnClick: true,
+				pauseOnHover: true,
+				draggable: true,
+				theme: "colored",
+			});
+
+			await getCart();
+		} catch (error) {
+			setTempCarts(backupCarts);
+			setcartTotal(backupTotal);
+			setFinalTotal(backupFinalTotal);
+
+			toast.error(`清空購物車失敗 "口"''：${error.response?.data?.message || "請稍後再試"}`, {
+				autoClose: 4000,
+			});
+		} finally {
+			setIsClearingAll(false);
+		}
+	};
+
+	useEffect(() => {
+		getCart();
+		return () => {};
+	}, [getCart]);
+
+	return (
+		<>
+			<h2 className="fs-4 fw-bold text-primary mb-4">購物車</h2>
+			<div className="bg-white p-2 rounded-3">
+				{tempCarts.length === 0 ? (
+					<h2 className="text-center mb-0 py-5 text-primary">目前購物車空空 `A'</h2>
+				) : (
+					<>
+						<div className="mb-2">
+							<button
+								type="button"
+								class="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1 ms-auto"
+								onClick={() => handleRemoveAllCart()}
+							>
+								<span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>刪除所有
+							</button>
+						</div>
+						<div className="table-responsive ">
+							<table className="table align-middle">
+								<thead>
+									<tr>
+										<th scope="col"></th>
+										<th scope="col">品名</th>
+										<th scope="col">數量/單位</th>
+										<th scope="col">小計</th>
+										<th scope="col"></th>
+									</tr>
+								</thead>
+								<tbody>
+									{tempCarts.map((cart) => (
+										<tr key={cart.id}>
+											<td style={{ width: "100px" }}>
+												<img
+													src={cart.product.imageUrl}
+													style={{ width: "80px", height: "80px", objectFit: "cover" }}
+													alt=""
+												/>
+											</td>
+											<td>{cart.product["title"]}</td>
+											<td>
+												<div className="d-flex align-items-center gap-2">
+													<button
+														type="button"
+														className="cart-qty-btn"
+														onClick={() => handleUpdateQty(cart.id, cart.qty - 1)}
+														disabled={cart.qty <= 1 || updatingCarts.has(cart.id)}
+													>
+														−
+													</button>
+
+													<select
+														className="cart-qty-select"
+														value={cart.qty}
+														onChange={(e) => handleUpdateQty(cart.id, Number(e.target.value))}
+														disabled={updatingCarts.has(cart.id)}
+													>
+														{Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
+															<option key={num} value={num}>
+																{num}
+															</option>
+														))}
+													</select>
+
+													<button
+														type="button"
+														className="cart-qty-btn"
+														onClick={() => handleUpdateQty(cart.id, cart.qty + 1)}
+														disabled={cart.qty >= cart.product.stock || updatingCarts.has(cart.id)}
+													>
+														+
+													</button>
+												</div>
+											</td>
+											<td>{cart.final_total}</td>
+											<td>
+												<button
+													type="button"
+													className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1"
+													onClick={() => handleRemoveCart(cart.id)}
+													disabled={updatingCarts.has(cart.id)} // ← 改用 per-item
+												>
+													<span
+														className={`spinner-border spinner-border-sm ${updatingCarts.has(cart.id) ? "d-block" : "d-none"}`}
+														aria-hidden="true"
+													></span>
+													{updatingCarts.has(cart.id) ? "刪除中..." : "刪除"}
+												</button>
+											</td>
+										</tr>
+									))}
+								</tbody>
+								<tfoot>
+									<tr>
+										<td colSpan={4} className="text-end">
+											總數:
+										</td>
+										<td className="text-center">{cartTotal}</td>
+									</tr>
+									<tr>
+										<td colSpan={4} className="text-end">
+											拆扣後?:
+										</td>
+										<td className="text-center">{finalTotal}</td>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+					</>
+				)}
+			</div>
+		</>
+	);
+};
+
+export default Cart;
