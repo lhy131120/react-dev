@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import api, { authApi } from "./api/axiosInstance.js";
+import api, { authApi } from "./api/axiosInstance-copy.js";
 import "./App.css";
 
 import ProductList from "./components/ProductList.jsx";
@@ -386,8 +386,6 @@ function App() {
 			alert(response.data.message || "操作成功");
 			closeModal(tempProduct.id ? "edit" : "newItem");
 
-			// getAdminProducts();
-
 			/* ===== 測試用 ===== */
 			await getAdminProducts(currentPage);
 			const updatedItem = adminProducts.find((p) => p.id === tempProduct.id);
@@ -398,7 +396,7 @@ function App() {
 			console.error("更新/新增產品失敗:", error?.response?.data || error);
 			alert(error?.response?.data?.message || "操作失敗");
 		}
-	};;
+	};
 
 	const uploadImage = async () => {
 		try {

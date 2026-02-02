@@ -1,4 +1,4 @@
-import api from "../../api/axiosInstance.js";
+import { api } from "../../api/axiosInstance.js";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 
@@ -19,23 +19,9 @@ const Cart = () => {
 			setcartTotal(total);
 			setFinalTotal(final_total);
 
-			toast.success(`取得購物車成功!`, {
-				autoClose: 4000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
-			});
+			toast.success(`取得購物車成功!`);
 		} catch (error) {
-			toast.error(`取得購物車失敗: ${error.response?.data?.message}`, {
-				autoClose: 4000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
-			});
+			toast.error(`取得購物車失敗: ${error.response?.data?.message}`);
 		}
 	}, []);
 
@@ -66,14 +52,7 @@ const Cart = () => {
 
 			// console.log(`購物車項目 ${cartId} 數量更新為 ${safeQty}`);
 
-			toast.success(`${response.data?.message || "成功更新"}!`, {
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
-			});
+			toast.success(`${response.data?.message || "成功更新"}!`);
 			// console.log(response.data.message)
 		} catch (error) {
 			// 失敗時回滾 UI
@@ -81,14 +60,7 @@ const Cart = () => {
 				prevCarts.map((item) => (item.id === cartId ? { ...item, qty: cartItem.qty } : item))
 			);
 
-			toast.error(`更新購物車數量失敗: ${error.response?.data?.message}`, {
-				autoClose: 4000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
-			});
+			toast.error(`更新購物車數量失敗: ${error.response?.data?.message}`);
 		} finally {
 			// 結束 loading 狀態
 			setUpdatingCarts((prev) => {
@@ -100,24 +72,17 @@ const Cart = () => {
 	};
 
 	const handleRemoveCart = async (cartId) => {
-		// 先檢查是否已在處理中，避免重複點擊
 		if (updatingCarts.has(cartId)) return;
 
-		// 樂觀移除（可選，但推薦：感覺更快）
 		const removedItem = tempCarts.find((item) => item.id === cartId);
 		setTempCarts((prev) => prev.filter((item) => item.id !== cartId));
-
-		// 標記正在刪除
 		setUpdatingCarts((prev) => new Set([...prev, cartId]));
 
 		try {
 			const response = await api.delete(`/cart/${cartId}`);
 
-			toast.success(`產品已移除！${response.data.message || ""}`, {
-				autoClose: 3000,
-			});
+			toast.success(`產品已移除！${response.data.message || ""}`);
 
-			// 重新載入最新資料（確保後端一致）
 			await getCart();
 		} catch (error) {
 			// 失敗 → 回滾 UI
@@ -125,9 +90,7 @@ const Cart = () => {
 				setTempCarts((prev) => [...prev, removedItem]); // 放回原位（或依序插入）
 			}
 
-			toast.error(`刪除失敗：${error.response?.data?.message || "請稍後再試"}`, {
-				autoClose: 4000,
-			});
+			toast.error(`刪除失敗：${error.response?.data?.message || "請稍後再試"}`);
 		} finally {
 			// 移除 loading 標記
 			setUpdatingCarts((prev) => {
@@ -154,14 +117,7 @@ const Cart = () => {
 		try {
 			const response = await api.delete(`/carts`);
 
-			toast.success(`購物車已清空！${response.data.message || ""}`, {
-				autoClose: 4000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
-			});
+			toast.success(`購物車已清空！${response.data.message || ""}`);
 
 			await getCart();
 		} catch (error) {
@@ -169,9 +125,7 @@ const Cart = () => {
 			setcartTotal(backupTotal);
 			setFinalTotal(backupFinalTotal);
 
-			toast.error(`清空購物車失敗 "口"''：${error.response?.data?.message || "請稍後再試"}`, {
-				autoClose: 4000,
-			});
+			toast.error(`清空購物車失敗 "口"''：${error.response?.data?.message || "請稍後再試"}`);
 		} finally {
 			setIsClearingAll(false);
 		}
@@ -193,10 +147,10 @@ const Cart = () => {
 						<div className="mb-2">
 							<button
 								type="button"
-								class="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1 ms-auto"
+								className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1 ms-auto"
 								onClick={() => handleRemoveAllCart()}
 							>
-								<span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>刪除所有
+								<span className="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>刪除所有
 							</button>
 						</div>
 						<div className="table-responsive ">

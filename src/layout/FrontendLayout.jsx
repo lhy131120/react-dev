@@ -1,4 +1,5 @@
 import { Outlet, NavLink } from "react-router";
+
 const FrontendLayout = () => {
 	return (
 		<>
@@ -26,12 +27,9 @@ const FrontendLayout = () => {
 					</li>
 				</ul>
 			</header>
-
 			<div className="container">
 				<Outlet />
 			</div>
-
-			{/* <footer>Footer</footer> */}
 		</>
 	);
 };

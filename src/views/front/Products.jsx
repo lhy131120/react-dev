@@ -1,4 +1,4 @@
-import api from "../../api/axiosInstance.js";
+import { api } from "../../api/axiosInstance.js";
 import { useState, useEffect, useEffectEvent } from "react";
 import ProductCard from "../../components/ProductCard.jsx";
 import { useNavigate } from "react-router";

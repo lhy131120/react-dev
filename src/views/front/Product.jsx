@@ -1,8 +1,7 @@
-import api from "../../api/axiosInstance.js";
-import { useParams } from "react-router";
+import { api } from "../../api/axiosInstance.js";
+import { useParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { useEffectEvent } from "react";
-import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 
 const Product = () => {
@@ -39,7 +38,7 @@ const Product = () => {
 		};
 		try {
 			const response = await api.post(`/cart`, { data });
-      toast.success(`${response.data?.message || "成功加進購物車"}!`, {
+			toast.success(`${response.data?.message || "成功加進購物車"}!`, {
 				autoClose: 3000,
 				hideProgressBar: false,
 				closeOnClick: true,
@@ -51,7 +50,7 @@ const Product = () => {
 				setLoading(false);
 			}, 1500);
 		} catch (error) {
-      toast.error(`加入購物車失敗: ${error.response?.data?.message}`, {
+			toast.error(`加入購物車失敗: ${error.response?.data?.message}`, {
 				autoClose: 3000,
 				hideProgressBar: false,
 				closeOnClick: true,

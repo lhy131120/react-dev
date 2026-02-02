@@ -64,7 +64,7 @@ createRoot(document.getElementById("root")).render(
 
 		<ToastContainer
 			position="top-right" // 位置：top-right / bottom-center 等
-			autoClose={5000} // 自動關閉時間 (ms)，設 0 則不自動關
+			autoClose={2000} // 自動關閉時間 (ms)，設 0 則不自動關
 			hideProgressBar={false} // 是否隱藏進度條
 			newestOnTop={false}
 			closeOnClick

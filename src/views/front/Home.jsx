@@ -1,12 +1,10 @@
-import api from "../../api/axiosInstance.js";
+import { api } from "../../api/axiosInstance.js";
 import { useState, useEffect, useEffectEvent } from "react";
-
-const { VITE_API_BASE, VITE_API_PATH } = import.meta.env;
 
 const Home = () => {
 	const [products, setProducts] = useState([]);
 
-  const getProducts = useEffectEvent(async () => {
+	const getProducts = useEffectEvent(async () => {
 		try {
 			const response = await api.get("/products/all");
 			const { products } = response.data;
@@ -21,13 +19,13 @@ const Home = () => {
 	});
 
 	useEffect(() => {
-    getProducts();
-  }, []);
+		getProducts();
+	}, []);
 
 	return (
 		<>
 			<h2 className="fs-4 fw-bold text-primary mb-0">Home</h2>
-			{JSON.stringify(products)}
+      {JSON.stringify(products)}
 		</>
 	);
 };
