@@ -1,0 +1,373 @@
+.swiper-page-header {
+  margin-bottom: 2rem;
+  text-align: left;
+  padding: 0 1rem;
+}
+
+.swiper-page-title {
+  font-size: clamp(1.6rem, 5vw, 2rem);
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+.swiper-page-subtitle {
+  font-size: clamp(1rem, 3.5vw, 1.125rem);
+  color: #78350f;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* ===== Swiper Container (全寬背景延伸) ===== */
+.swiper-container {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  overflow: hidden;
+}
+
+/* ===== Empty State ===== */
+.swiper-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: linear-gradient(135deg, rgba(255, 247, 237, 0.5), rgba(255, 255, 255, 0.5));
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.swiper-empty-text {
+  color: #b97700;
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+/* ===== Swiper 本體 ===== */
+.product-swiper {
+  width: 100%;
+  padding: 2rem 1rem;
+  position: relative;
+}
+
+.product-swiper .swiper-wrapper {
+  padding: 1rem 0;
+}
+
+.product-swiper .swiper-slide {
+  height: auto;
+  display: flex;
+  justify-content: center;
+}
+
+/* ===== 分頁點樣式 ===== */
+.product-swiper .swiper-pagination {
+  bottom: -2.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.product-swiper .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background: rgba(217, 119, 6, 0.3);
+  opacity: 1;
+  transition: all 0.3s ease;
+  border-radius: 50%;
+}
+
+.product-swiper .swiper-pagination-bullet-active {
+  background: #d97706;
+  width: 30px;
+  border-radius: 5px;
+}
+
+.product-swiper .swiper-button-next,
+.product-swiper .swiper-button-prev {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  opacity: 0.92;
+  transition: all 0.25s ease;
+}
+
+.product-swiper .swiper-button-next:hover,
+.product-swiper .swiper-button-prev:hover {
+  opacity: 1;
+  transform: scale(1.08);
+  box-shadow: 0 8px 20px rgba(217, 119, 6, 0.45);
+}
+
+.product-swiper .swiper-button-prev {
+  left: 10px;
+}
+
+.product-swiper .swiper-button-next {
+  right: 10px;
+}
+
+.product-swiper .swiper-button-next::after,
+.product-swiper .swiper-button-prev::after {
+  font-size: 1.8rem;
+  font-weight: 300;
+}
+
+.product-swiper .swiper-button-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.product-swiper .swiper-button-prev svg,
+.product-swiper .swiper-button-next svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* ===== 產品卡片 ===== */
+.product-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 247, 237, 0.9));
+  border: 2px solid rgba(217, 119, 6, 0.15);
+  border-radius: 12px;
+  padding: 1rem;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  min-height: 400px;
+  position: relative;
+  cursor: pointer;
+}
+
+.product-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.product-card:hover {
+  border-color: rgba(217, 119, 6, 0.4);
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.15);
+  transform: translateY(-4px);
+}
+
+.product-card:hover::before {
+  opacity: 1;
+}
+
+/* 圖片 */
+.product-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  transition: transform 0.35s ease;
+}
+
+.product-card:hover .product-image {
+  transform: scale(1.04);
+}
+
+/* 資訊區 */
+.product-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.product-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #92400e;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-category {
+  font-size: 0.8rem;
+  color: #b97700;
+}
+
+.product-description {
+  font-size: 0.8rem;
+  color: #78350f;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: auto;
+}
+
+/* 價格區 */
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(217, 119, 6, 0.2);
+}
+
+.product-price-current {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.product-price-original {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.product-discount {
+  margin-left: auto;
+  background: linear-gradient(135deg, #d97706, #f59e0b);
+  color: white;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+@media (max-width: 480px) {
+  .product-swiper {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .product-image {
+    height: 200px;
+    margin-bottom: 0.75rem;
+  }
+
+  .product-card {
+    padding: 0.75rem;
+    min-height: 380px;
+  }
+
+  .product-title {
+    font-size: 0.85rem;
+  }
+
+  .product-category {
+    font-size: 0.75rem;
+  }
+
+  .product-price-current {
+    font-size: 0.95rem;
+  }
+
+  .product-swiper .swiper-button-next,
+  .product-swiper .swiper-button-prev {
+    width: 36px;
+    height: 36px;
+  }
+
+  .swiper-button-next::after,
+  .swiper-button-prev::after {
+    font-size: 1.4rem;
+  }
+
+    .product-swiper .swiper-button-next svg,
+    .product-swiper .swiper-button-prev svg{
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+}
+
+@media (min-width: 481px) and (max-width: 640px) {
+  .product-image {
+    height: 240px;
+  }
+
+  .product-card {
+    min-height: 420px;
+  }
+
+  .swiper-button-next,
+  .swiper-button-prev {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  .product-image {
+    height: 200px;
+  }
+
+  .product-card {
+    min-height: 440px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  .product-image {
+    height: 180px;
+  }
+
+  .product-card {
+    min-height: 460px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .swiper-page-header {
+    padding: 0 2.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .product-swiper {
+    padding: 2.5rem 1rem;
+  }
+
+  .product-image {
+    height: 200px;
+  }
+
+  .product-card {
+    min-height: 480px;
+  }
+
+  .product-title {
+    font-size: 1rem;
+  }
+
+  .product-price-current {
+    font-size: 1.25rem;
+  }
+
+  .swiper-button-next,
+  .swiper-button-prev {
+    width: 52px;
+    height: 52px;
+    left: 20px;
+    right: 20px;
+  }
+
+  .swiper-button-next::after,
+  .swiper-button-prev::after {
+    font-size: 2rem;
+  }
+}

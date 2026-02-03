@@ -1,6 +1,5 @@
 // components/Admin/ProductFormModal.jsx
-import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
-import { Modal } from "bootstrap";
+import { useRef, useEffect, forwardRef, useImperativeHandle, useState } from "react";
 
 const ProductFormModal = forwardRef(
 	(
@@ -25,54 +24,38 @@ const ProductFormModal = forwardRef(
 		ref
 	) => {
 		const modalEl = useRef(null);
-		const modalInstance = useRef(null);
-
-		// 初始化與銷毀 Bootstrap Modal
-		useEffect(() => {
-			if (!modalEl.current) return;
-
-			modalInstance.current = new Modal(modalEl.current, {
-				keyboard: true,
-				backdrop: true,
-			});
-
-			const handleShown = () => {
-				modalEl.current.removeAttribute("aria-hidden");
-				modalEl.current.inert = false;
-				const firstFocusable = modalEl.current.querySelector(
-					".btn-close, input:not([disabled]), textarea:not([disabled]), button:not([disabled])"
-				);
-				firstFocusable?.focus();
-			};
-
-			const handleHide = () => {
-				modalEl.current?.removeAttribute("inert");
-			};
-
-			// 綁定 Bootstrap 事件
-			modalEl.current.addEventListener("shown.bs.modal", handleShown);
-			modalEl.current.addEventListener("hide.bs.modal", handleHide);
-			modalEl.current.addEventListener("hidden.bs.modal", handleHide);
-
-			// Cleanup：移除事件監聽 + 銷毀 Modal 實例
-			return () => {
-				modalInstance.current?.dispose();
-				modalEl.current.removeEventListener("shown.bs.modal", handleShown);
-				modalEl.current.removeEventListener("hide.bs.modal", handleHide);
-				modalEl.current.removeEventListener("hidden.bs.modal", handleHide);
-			};
-		}, []);
+		const [showModal, setShowModal] = useState(false);
 
 		useImperativeHandle(ref, () => ({
-			show: () => modalInstance.current?.show(),
-			hide: () => modalInstance.current?.hide(),
+			show: () => {
+				setShowModal(true);
+				document.body.classList.add("modal-open");
+			},
+			hide: () => {
+				setShowModal(false);
+				document.body.classList.remove("modal-open");
+			},
 		}));
+
+		// 關閉時自動移除 modal-open class
+		useEffect(() => {
+			if (!showModal) {
+				document.body.classList.remove("modal-open");
+			}
+		}, [showModal]);
 
 		// 根據是否有 id 判斷是「編輯」還是「新增」
 		const modalTitle = tempProduct?.id ? "編輯產品" : "新增產品";
 
-		return (
-			<div className="modal fade" ref={modalEl} tabIndex="-1">
+	if (!showModal) return null;
+
+	return (
+		<>
+			{/* Backdrop - 必須先渲染 */}
+			<div className="modal-backdrop fade show" onClick={() => closeModal(tempProduct?.id ? "edit" : "newItem")} />
+			
+			{/* Modal */}
+			<div className="modal fade show d-block" ref={modalEl} tabIndex="-1" style={{ display: "block" }}>
 				<div className="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-xl-down modal-dialog-scrollable">
 					<div className="modal-content">
 						<div className="modal-header">
@@ -83,9 +66,6 @@ const ProductFormModal = forwardRef(
 								onClick={() => closeModal(tempProduct?.id ? "edit" : "newItem")}
 							/>
 						</div>
-
-            {JSON.stringify(tempProduct)}
-
 						<div className="modal-body">
 							{tempProduct && (
 								<div className="row flex-row-reverse g-4">
@@ -196,8 +176,7 @@ const ProductFormModal = forwardRef(
 												<input
 													id="num"
 													type="number"
-                          min="0"
-                          step="1"
+													min="1"
 													className={`form-control ${formErrors.num ? "is-invalid" : ""}`}
 													placeholder="庫存"
 													value={tempProduct.num ?? ""}
@@ -278,6 +257,7 @@ const ProductFormModal = forwardRef(
 														/>
 														<button
 															className="btn btn-outline-danger"
+															style={{ borderTopRightRadius: "8px", borderBottomRightRadius: "8px" }}
 															type="button"
 															onClick={() => {
 																const newTags = tempProduct.label.filter((_, i) => i !== index);
@@ -294,7 +274,7 @@ const ProductFormModal = forwardRef(
 
 												<button
 													type="button"
-													className={`btn btn-outline-primary ${tempProduct?.label?.length >= 3 ? "d-none" : ""}`}
+													className={`btn btn-primary ${tempProduct?.label?.length >= 3 ? "d-none" : ""}`}
 													onClick={() => {
 														const newTags = [...(tempProduct?.label || []), ""];
 														setTempProduct((prev) => ({
@@ -347,6 +327,7 @@ const ProductFormModal = forwardRef(
 														/>
 														<button
 															className="btn btn-outline-danger"
+															style={{ borderTopRightRadius: "8px", borderBottomRightRadius: "8px" }}
 															type="button"
 															onClick={() => {
 																const newFlavors = tempProduct.flavor.filter((_, i) => i !== index);
@@ -363,7 +344,7 @@ const ProductFormModal = forwardRef(
 
 												<button
 													type="button"
-													className={`btn btn-outline-primary ${tempProduct?.flavor?.length >= 2 ? "d-none" : ""}`}
+													className={`btn btn-primary ${tempProduct?.flavor?.length >= 2 ? "d-none" : ""}`}
 													onClick={() => {
 														const newFlavors = [...(tempProduct?.flavor || []), ""];
 														setTempProduct((prev) => ({
@@ -441,7 +422,7 @@ const ProductFormModal = forwardRef(
 														aria-label="Upload"
 													/>
 													<button
-														className="btn btn-outline-secondary"
+														className="btn btn-outline-secondary py-0"
 														type="button"
 														id="uploadImageButton"
 														onClick={uploadImage}
@@ -457,7 +438,11 @@ const ProductFormModal = forwardRef(
 											<p className="fw-bold mb-3">附加圖片（可多張，上傳後自動加入）</p>
 
 											{tempProduct?.imagesUrl?.map((url, index) => (
-												<div key={index} className="input-group mb-3 align-items-center position-relative">
+												<div
+													key={index}
+													className="input-group mb-3 align-items-center position-relative overflow-hidden"
+													style={{ borderRadius: "6px" }}
+												>
 													<div className="form-control bg-dark text-white border-0 d-flex align-items-center gap-2 p-2">
 														<img
 															src={url}
@@ -497,7 +482,7 @@ const ProductFormModal = forwardRef(
 
 											<button
 												type="button"
-												className="btn btn-outline-primary w-100 mb-3"
+												className="btn btn-primary w-100 mb-3"
 												onClick={() => setUploadingImages(true)}
 											>
 												+ 上傳新圖片
@@ -594,8 +579,8 @@ const ProductFormModal = forwardRef(
 					</div>
 				</div>
 			</div>
-		);
-	}
-);
+		</>
+	);
+});
 
 export default ProductFormModal;

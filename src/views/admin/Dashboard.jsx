@@ -1,10 +1,14 @@
-import { api } from "../../api/axiosInstance.js";
+import axios from "axios";
+import { api, plainApi } from "../../api/axiosInstance.js";
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
 
 import ProductTable from "../../components/Admin/ProductTable.jsx";
 import Pagination from "../../components/Admin/Pagination.jsx";
 import ProductFormModal from "../../components/Admin/ProductFormModal.jsx";
 import DeleteConfirmModal from "../../components/DeleteConfirmModal.jsx";
+import AdminHeader from "../../components/Admin/AdminHeader.jsx";
+import { toast } from "react-toastify";
 
 const requiredFields = [
 	"category",
@@ -20,6 +24,7 @@ const requiredFields = [
 ];
 
 const Dashboard = () => {
+	const navigate = useNavigate();
 	const [adminProducts, setAdminProducts] = useState([]);
 	const [tempProduct, setTempProduct] = useState(null);
 	const [formErrors, setFormErrors] = useState({});
@@ -67,7 +72,7 @@ const Dashboard = () => {
 				price: 1,
 				title: "",
 				unit: "",
-				num: 0,
+				num: Number(1),
 				imageUrl: "https://placehold.co/600x400?text=No+Image",
 				imagesUrl: [],
 				is_enabled: 1,
@@ -82,7 +87,6 @@ const Dashboard = () => {
 		}
 	};
 
-	// 修正後的 closeModal：只呼叫 ref.hide() + 執行清理
 	const closeModal = (type) => {
 		if (type === "edit" || type === "newItem") {
 			adminModalRef.current?.hide();
@@ -99,7 +103,7 @@ const Dashboard = () => {
 			deleteModalRef.current?.hide();
 		}
 
-		// 所有 modal 關閉後統一清空 tempProduct（視需求可調整）
+		// 所有 modal 關閉後統一清空 tempProduct
 		setTempProduct(null);
 
 		if (uploadImageInputRef.current) {
@@ -185,7 +189,7 @@ const Dashboard = () => {
 
 	const updateProduct = async () => {
 		if (!validateForm()) {
-			alert("請修正表單中的錯誤");
+			toast.info(`請修正表單中的錯誤 OwO'! `);
 			return;
 		}
 
@@ -196,7 +200,7 @@ const Dashboard = () => {
 					origin_price: Number(tempProduct.origin_price),
 					price: Number(tempProduct.price),
 					// num: Number(tempProduct.num),
-					num: Math.floor(Number(tempProduct.num)) || 0,
+					num: Math.floor(Number(tempProduct.num)) || 1,
 					is_enabled: tempProduct.is_enabled ? 1 : 0,
 					imagesUrl: (tempProduct.imagesUrl || []).filter((url) => url && url.trim() !== ""),
 					label: (tempProduct.label || []).filter((tag) => tag && tag.trim() !== ""),
@@ -213,17 +217,22 @@ const Dashboard = () => {
 
 			console.log("送出的 payload.num:", payload.data.num, typeof payload.data.num);
 
-			alert(response.data.message || "操作成功");
+			toast.success(`${response.data.message}` || "操作成功");
 			closeModal(tempProduct.id ? "edit" : "newItem");
 
+			if (!tempProduct.id) {
+				setTimeout(() => {
+					getAdminProducts();
+				}, 1000);
+			}
 			/* ===== 測試用 ===== */
 			await getAdminProducts(currentPage);
 			const updatedItem = adminProducts.find((p) => p.id === tempProduct.id);
-			console.log("更新後前端看到的 num:", updatedItem?.num);
+			console.log("更新後前端看到的 num:", updatedItem?.num, typeof updatedItem?.num);
 			/* ===== 測試用 ===== */
 		} catch (error) {
 			console.error("更新/新增產品失敗:", error?.response?.data || error);
-			alert(error?.response?.data?.message || "操作失敗");
+			toast.error(`${error?.response?.data?.message}` || "操作失敗");
 		}
 	};
 
@@ -240,8 +249,7 @@ const Dashboard = () => {
 				imageUrl,
 			});
 		} catch (error) {
-			console.error("上傳圖片失敗:", error?.response?.data || error);
-			alert(error?.response?.data?.message || "上傳圖片失敗");
+			toast.error(`${error?.response?.data?.message}` || "上傳圖片失敗");
 		}
 	};
 
@@ -264,10 +272,9 @@ const Dashboard = () => {
 				imagesUrl: [...(prev.imagesUrl || []), imageUrl],
 			}));
 
-			// alert("圖片上傳成功！");
+			toast.success("圖片上傳成功！");
 		} catch (error) {
-			console.error("上傳圖片失敗:", error?.response?.data || error);
-			alert(error?.response?.data?.message || "上傳圖片失敗");
+			toast.error(`${error?.response?.data?.message}` || "上傳圖片失敗");
 		} finally {
 			setUploadingImages(false); // 上傳完自動關閉區塊
 			setPreviewImage(null);
@@ -305,7 +312,7 @@ const Dashboard = () => {
 			setCurrentPage(page);
 			setAdminProducts(products || []);
 		} catch (error) {
-			console.error("取得管理員產品列表失敗:", error?.response?.data || error);
+			toast.error("取得管理員產品列表失敗:", error?.response?.data || "取得管理員產品列表失敗");
 
 			// if (error?.response?.status === 401) {
 			// 	setIsAuth(false);
@@ -324,12 +331,32 @@ const Dashboard = () => {
 	const handleDeleteItem = async (id) => {
 		try {
 			const response = await api.delete(`/admin/product/${id}`);
-			alert(`${response.data.message}`);
+			toast.success(`${response.data.message}` || "成功刪除產品!");
 			getAdminProducts(currentPage);
 		} catch (error) {
-			console.error("刪除產品失敗:", error?.response?.data || error);
-			alert(error?.response?.data?.message || "刪除產品失敗");
+			toast.error("刪除產品失敗:", error?.response?.data?.message || "刪除產品失敗");
 		}
+	};
+
+	const handleLogout = async () => {
+		try {
+			await plainApi.post("/logout");
+			toast.success("登出成功");
+		} catch (error) {
+			if (error.response?.status === 400 && error.response?.data?.message === "請重新登出") {
+				toast.error("後端表示已登出");
+			} else {
+				toast.error(`登出失敗: ${error.response?.data?.message || "登出失敗"}`);
+			}
+		}
+
+		// 本地強制清理
+		document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+		delete axios.defaults.headers.common["Authorization"];
+		// setIsAuth(false);
+
+		// 導向到首頁
+		navigate("/", { replace: true });
 	};
 
 	useEffect(() => {
@@ -340,6 +367,8 @@ const Dashboard = () => {
 	return (
 		<>
 			<h2 className="fs-4 fw-bold text-primary mb-4">Dashboard</h2>
+
+			<AdminHeader handleLogout={handleLogout} openModal={openModal} />
 
 			<ProductTable adminProducts={adminProducts} openModal={openModal} />
 			{pagination.total_pages > 1 && (
@@ -371,7 +400,7 @@ const Dashboard = () => {
 				ref={deleteModalRef}
 				tempProduct={tempProduct}
 				handleDeleteItem={handleDeleteItem}
-				onClose={() => closeModal("delete")}
+				cloaseModal={() => closeModal("delete")}
 			/>
 		</>
 	);
