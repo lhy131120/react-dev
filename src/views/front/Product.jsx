@@ -1,20 +1,35 @@
-import { api } from "../../api/axiosInstance.js";
+import { api } from "@/services";
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { useEffectEvent } from "react";
 import { toast } from "react-toastify";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Thumbs, FreeMode, Zoom } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/thumbs";
+import "swiper/css/free-mode";
+import "swiper/css/zoom";
+import "@/styles/ProductDetail.css";
 
 const Product = () => {
 	const navigate = useNavigate();
 	const { id } = useParams();
 	const [tempProduct, setTempProduct] = useState(null);
 	const [loading, setLoading] = useState(false);
+	const [thumbsSwiper, setThumbsSwiper] = useState(null);
+	const [quantity, setQuantity] = useState(1);
+	const [selectedFlavor, setSelectedFlavor] = useState(null);
 
 	const getProduct = useEffectEvent(async () => {
 		try {
 			const response = await api.get(`/product/${id}`);
 			const { product } = response.data;
 			setTempProduct(product);
+			// 預設選擇第一個口味
+			if (product.flavor && product.flavor.length > 0) {
+				setSelectedFlavor(product.flavor[0]);
+			}
 		} catch (error) {
 			toast.error(`取得產品失敗: ${error.response?.data?.message}`, {
 				autoClose: 3000,
@@ -30,7 +45,7 @@ const Product = () => {
 		}
 	});
 
-	const handleAddCart = async (id, qty = 1) => {
+	const handleAddCart = async (id, qty = quantity) => {
 		setLoading(true);
 		const data = {
 			product_id: id,
@@ -58,128 +73,262 @@ const Product = () => {
 				draggable: true,
 				theme: "colored",
 			});
+			setLoading(false);
 		}
+	};
+
+	// 收集所有圖片
+	const getAllImages = () => {
+		if (!tempProduct) return [];
+		const images = [];
+		if (tempProduct.imageUrl?.trim()) {
+			images.push(tempProduct.imageUrl.trim());
+		}
+		if (tempProduct.imagesUrl?.length > 0) {
+			tempProduct.imagesUrl
+				.filter((img) => img && img.trim() !== "")
+				.forEach((img) => images.push(img));
+		}
+		return images;
+	};
+
+	// 計算折扣百分比
+	const getDiscountPercent = () => {
+		if (!tempProduct || !tempProduct.origin_price || tempProduct.origin_price <= tempProduct.price) {
+			return 0;
+		}
+		return Math.round(((tempProduct.origin_price - tempProduct.price) / tempProduct.origin_price) * 100);
 	};
 
 	useEffect(() => {
 		getProduct();
 	}, [id]);
 
+	const allImages = getAllImages();
+	const discountPercent = getDiscountPercent();
+
+	if (!tempProduct) {
+		return null;
+	}
+
 	return (
-		<>
-			{tempProduct && <h2 className="fs-4 fw-bold text-primary mb-4">{tempProduct.title}</h2>}
-			{tempProduct && (
-				<div className="row row-cols-1 row-cols-lg-2 g-0 py-2 py-lg-3 bg-white">
-					{/* 圖片區 */}
-					<div className="col gx-3">
-						{tempProduct?.imageUrl?.trim() && (
-							<img
-								src={tempProduct.imageUrl.trim()}
-								alt={tempProduct.title}
-								className="img-fluid rounded mb-2 mb-lg-3 shadow"
-								style={{
-									objectFit: "cover",
-									width: "100%",
-								}}
-							/>
+		<div className="product-detail-container">
+			{/* 麵包屑導航 */}
+			<nav className="product-breadcrumb">
+				<span onClick={() => navigate("/")}>首頁</span>
+				<span className="separator">/</span>
+				<span onClick={() => navigate("/products")}>商品列表</span>
+				<span className="separator">/</span>
+				<span className="current">{tempProduct.title}</span>
+			</nav>
+
+			<div className="product-detail-wrapper">
+				{/* 左側：圖片區域 */}
+				<div className="product-gallery">
+					{/* 主圖 Swiper */}
+					<Swiper
+						modules={[Navigation, Thumbs, Zoom]}
+						navigation
+						zoom={{ maxRatio: 2 }}
+						thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
+						className="product-main-swiper"
+					>
+						{allImages.map((img, index) => (
+							<SwiperSlide key={index}>
+								<div className="swiper-zoom-container">
+									<img
+										src={img}
+										alt={`${tempProduct.title} - ${index + 1}`}
+										onError={(e) => {
+											e.target.src = "https://placehold.co/600x600?text=No+Image";
+										}}
+									/>
+								</div>
+							</SwiperSlide>
+						))}
+						{/* 折扣標籤 */}
+						{discountPercent > 0 && (
+							<div className="discount-badge">-{discountPercent}% OFF</div>
 						)}
-						{tempProduct.imagesUrl?.length > 0 && (
-							<div className="d-flex gap-2 flex-wrap rounded overflow-hidden">
-								{tempProduct.imagesUrl
-									.filter((img) => img && img.trim() !== "")
-									.map((img, i) => (
-										<img
-											key={i}
-											src={img}
-											alt={`additional-${i}`}
-											className="shadow-sm"
-											style={{
-												width: "80px",
-												height: "80px",
-												objectFit: "cover",
-											}}
-											onError={(e) => {
-												e.target.src = "https://via.placeholder.com/80?text=NoImage";
-											}}
-										/>
-									))}
+					</Swiper>
+
+					{/* 縮圖 Swiper */}
+					{allImages.length > 1 && (
+						<Swiper
+							modules={[FreeMode, Thumbs]}
+							onSwiper={setThumbsSwiper}
+							spaceBetween={10}
+							slidesPerView={4}
+							freeMode
+							watchSlidesProgress
+							className="product-thumbs-swiper"
+						>
+							{allImages.map((img, index) => (
+								<SwiperSlide key={index}>
+									<img
+										src={img}
+										alt={`thumbnail-${index + 1}`}
+										onError={(e) => {
+											e.target.src = "https://placehold.co/100x100?text=No+Image";
+										}}
+									/>
+								</SwiperSlide>
+							))}
+						</Swiper>
+					)}
+				</div>
+
+				{/* 右側：商品資訊 */}
+				<div className="product-info">
+					{/* 分類標籤 */}
+					<div className="product-categories">
+						<span className="category-tag">{tempProduct.category}</span>
+						{tempProduct.subcategory && (
+							<span className="subcategory-tag">{tempProduct.subcategory}</span>
+						)}
+					</div>
+
+					{/* 商品標題 */}
+					<h1 className="product-title">{tempProduct.title}</h1>
+
+					{/* 標籤 */}
+					{tempProduct.label && tempProduct.label.length > 0 && (
+						<div className="product-labels">
+							{tempProduct.label.map((tag, i) => (
+								<span key={i} className="label-tag">#{tag}</span>
+							))}
+						</div>
+					)}
+
+					{/* 價格區塊 */}
+					<div className="product-price-block">
+						<div className="price-row">
+							<span className="current-price">NT${tempProduct.price}</span>
+							<span className="price-unit">/ {tempProduct.unit}</span>
+						</div>
+						{tempProduct.origin_price && tempProduct.origin_price > tempProduct.price && (
+							<div className="original-price-row">
+								<span className="original-price">NT${tempProduct.origin_price}</span>
+								<span className="save-text">省下 NT${tempProduct.origin_price - tempProduct.price}</span>
 							</div>
 						)}
 					</div>
 
-					{/* 資訊區 */}
-					<div className="col gx-3">
-						<p className="text-muted small mb-2">分類：{tempProduct.category}</p>
-						<p className="text-muted small mb-2">類別：{tempProduct.subcategory}</p>
+					{/* 商品描述 */}
+					<div className="product-description">
+						<h3>商品說明</h3>
+						<p>{tempProduct.description}</p>
+					</div>
 
-						{tempProduct.label && tempProduct.label.length > 0 && (
-							<div className="d-flex flex-wrap gap-2 mb-2">
-								{tempProduct.label.map((tag, i) => (
-									<span key={i} className="badge bg-secondary">
-										{tag}
-									</span>
+					{/* 商品內容 */}
+					{tempProduct.content && (
+						<div className="product-content">
+							<h3>商品內容</h3>
+							<p>{tempProduct.content}</p>
+						</div>
+					)}
+
+					{/* 口味選擇 */}
+					{tempProduct.flavor && tempProduct.flavor.length > 0 && (
+						<div className="product-flavor-section">
+							<h3>選擇口味</h3>
+							<div className="flavor-options">
+								{tempProduct.flavor.map((flavor, i) => (
+									<button
+										key={i}
+										className={`flavor-btn ${selectedFlavor === flavor ? "active" : ""}`}
+										onClick={() => setSelectedFlavor(flavor)}
+									>
+										{flavor}
+									</button>
 								))}
 							</div>
-						)}
-
-						<div className="mb-3 text-muted">{tempProduct.description}</div>
-						<div className="text-muted small">內容：{tempProduct.content}</div>
-
-						<div className="my-4">
-							<p className="text-decoration-line-through text-muted">
-								原價：${tempProduct.origin_price} {tempProduct.unit}
-							</p>
-							<p className="fs-3 text-danger fw-bold">
-								售價：${tempProduct.price} {tempProduct.unit}
-							</p>
 						</div>
+					)}
 
-						<div className="mb-2 text-muted">
-							庫存：{tempProduct.num} {tempProduct.unit}
-						</div>
-
-						<div className="mb-2 text-muted">
-							<div className="d-flex align-items-center">
-								<span>口味:</span>
-								{tempProduct.flavor && tempProduct.flavor.length > 0 && (
-									<>
-										{tempProduct.flavor.map((flavor, i) => (
-											<span key={i} className="badge bg-secondary ms-2">
-												{flavor}
-											</span>
-										))}
-									</>
-								)}
-							</div>
-						</div>
-
-						<div className="mb-2">
-							<p className="text-muted">
-								狀態：
-								<span className={`badge ms-2 ${tempProduct.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
-									{tempProduct.is_enabled === 1 ? "啟用" : "未啟用"}
-								</span>
-							</p>
-						</div>
-
-						<div>
+					{/* 數量選擇 */}
+					<div className="product-quantity-section">
+						<h3>購買數量</h3>
+						<div className="quantity-selector">
 							<button
-								type="button"
-								className={`btn btn-sm btn-primary fw-bold px-4 py-2 text-white d-flex align-items-center gap-1`}
-								disabled={loading}
-								onClick={() => handleAddCart(tempProduct.id)}
+								className="qty-btn"
+								onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+								disabled={quantity <= 1}
 							>
-								<span
-									className={`spinner-border spinner-border-sm ${loading ? "d-block" : "d-none"}`}
-									aria-hidden="true"
-								></span>
-								{loading ? "加入購物車中..." : "加入購物車"}
+								−
 							</button>
+							<span className="qty-value">{quantity}</span>
+							<button
+								className="qty-btn"
+								onClick={() => setQuantity((prev) => Math.min(tempProduct.num || 99, prev + 1))}
+								disabled={quantity >= (tempProduct.num || 99)}
+							>
+								+
+							</button>
+						</div>
+						<span className="stock-info">庫存：{tempProduct.num} {tempProduct.unit}</span>
+					</div>
+
+					{/* 狀態與加入購物車 */}
+					<div className="product-actions">
+						{tempProduct.is_enabled === 1 ? (
+							<>
+								<button
+									type="button"
+									className="add-to-cart-btn"
+									disabled={loading}
+									onClick={() => handleAddCart(tempProduct.id)}
+								>
+									{loading ? (
+										<>
+											<span className="spinner"></span>
+											加入購物車中...
+										</>
+									) : (
+										<>
+											<span className="cart-icon">🛒</span>
+											加入購物車
+										</>
+									)}
+								</button>
+								<button
+									type="button"
+									className="buy-now-btn"
+									disabled={loading}
+									onClick={() => {
+										handleAddCart(tempProduct.id);
+										setTimeout(() => navigate("/cart"), 2000);
+									}}
+								>
+									立即購買
+								</button>
+							</>
+						) : (
+							<div className="unavailable-notice">
+								<span className="unavailable-icon">⚠️</span>
+								此商品目前暫停販售
+							</div>
+						)}
+					</div>
+
+					{/* 額外資訊 */}
+					<div className="product-extra-info">
+						<div className="info-item">
+							<span className="info-icon">🚚</span>
+							<span>滿 $1000 免運費</span>
+						</div>
+						<div className="info-item">
+							<span className="info-icon">🔄</span>
+							<span>7 天鑑賞期</span>
+						</div>
+						<div className="info-item">
+							<span className="info-icon">✅</span>
+							<span>品質保證</span>
 						</div>
 					</div>
 				</div>
-			)}
-		</>
+			</div>
+		</div>
 	);
 };
 

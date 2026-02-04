@@ -1,13 +1,13 @@
 import { createRoot } from "react-dom/client";
-import App from "./App.jsx";
+import App from "@/App.jsx";
 
 // plug-in
 import { ToastContainer, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // style
-import "./assets/all.scss";
-import './App.css';
+import "@/assets/all.scss";
+import "@/App.css";
 
 createRoot(document.getElementById("root")).render(
 	<>

@@ -1,7 +1,8 @@
-import { api } from "../../api/axiosInstance.js";
+import { api } from "@/services";
 import { useState, useEffect, useEffectEvent } from "react";
-import ProductCard from "../../components/ProductCard.jsx";
+import ProductCard from "@/components/ProductCard.jsx";
 import { useNavigate } from "react-router";
+import { toast } from "react-toastify";
 
 const { VITE_API_BASE, VITE_API_PATH } = import.meta.env;
 
@@ -19,7 +20,7 @@ const Products = () => {
 			}));
 			setProducts(productArr);
 		} catch (error) {
-			console.error("取得產品列表失敗:", error?.response?.data || error);
+			toast.error(`取得產品列表失敗: ${error?.response?.data?.message || "請稍後再試"}`);
 		}
 	});
 

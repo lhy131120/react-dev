@@ -1,4 +1,4 @@
-import { api } from "../../api/axiosInstance.js";
+import { api } from "@/services";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 

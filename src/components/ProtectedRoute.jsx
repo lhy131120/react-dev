@@ -1,4 +1,4 @@
-import { plainApi } from "../api/axiosInstance";
+import { plainApi } from "@/services";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
 

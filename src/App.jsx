@@ -1,13 +1,15 @@
 import { RouterProvider } from "react-router";
-import router from "./routes/router";
-import { LoadingProvider } from "./context/LoadingContext";
-import Loading from "./components/Loading";
+import router from "@/routes/router";
+import { LoadingProvider } from "@/context/loading";
+import { Loading, LoadingInitializer } from "@/components/common";
 
 export default function App() {
   return (
     <LoadingProvider>
-      <Loading />
-      <RouterProvider router={router} />
+      <LoadingInitializer>
+        <Loading />
+        <RouterProvider router={router} />
+      </LoadingInitializer>
     </LoadingProvider>
   );
 }

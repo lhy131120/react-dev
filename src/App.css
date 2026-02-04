@@ -603,12 +603,29 @@ hr {
 }
 
 /* ===== Footer ===== */
-footer {
+.site-footer {
   background: linear-gradient(135deg, #92400e, #78350f);
-  color: #fff;
+  color: rgba(255, 255, 255, 0.9);
   border-top: 3px solid #d97706;
-  margin-top: 4rem;
-  padding: 2rem 0;
+  margin-top: auto;
+  padding: 1.5rem 0;
+  text-align: center;
+}
+
+.site-footer p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.site-footer.admin-footer {
+  background: linear-gradient(135deg, #1f2937, #111827);
+  border-top-color: #4b5563;
+}
+
+.admin-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 /* ===== Responsive ===== */

@@ -1,22 +1,21 @@
-import { api } from "../../api/axiosInstance.js";
+import { api } from "@/services";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { useLoading } from "../../context/LoadingContext";
+import { toast } from "react-toastify";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
-import "../../styles/Swiper.css";
+import "@/styles/Swiper.css";
 
 const Home = () => {
 	const [products, setProducts] = useState([]);
-	const { showLoading, hideLoading } = useLoading();
 	const navigate = useNavigate();
 
 	useEffect(() => {
 		const getProducts = async () => {
-			showLoading();
+			// Loading 由 axios interceptor 自動處理
 			try {
 				const response = await api.get("/products/all");
 				const { products } = response.data;
@@ -26,9 +25,7 @@ const Home = () => {
 				}));
 				setProducts(productArr);
 			} catch (error) {
-				console.error("取得產品列表失敗:", error?.response?.data || error);
-			} finally {
-				hideLoading();
+				toast.error(`取得產品列表失敗: ${error?.response?.data?.message || "請稍後再試"}`);
 			}
 		};
 

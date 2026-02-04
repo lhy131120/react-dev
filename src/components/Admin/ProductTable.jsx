@@ -1,58 +1,75 @@
+import "@/styles/ProductTable.css";
+
 export default function ProductTable({ adminProducts, openModal }) {
 	return (
-		<div className="table-responsive overflow-hidden">
-			<div className="d-flex justify-content-between align-items-center mb-3 text-primary">
-				<h2 className="text-primary mb-0 h6">產品列表</h2>
-				<span>列表數量：{adminProducts.length}</span>
+		<div className="product-table-wrapper">
+			{/* 標題列 */}
+			<div className="product-table-header">
+				<h2 className="product-table-title">
+					<span className="title-icon">📦</span>
+					產品列表
+				</h2>
+				<span className="product-count">
+					共 <strong>{adminProducts.length}</strong> 項產品
+				</span>
 			</div>
 
-			<table className="table">
-				<thead>
-					<tr>
-						<th scope="col" style={{ width: "80px" }}>
-							圖片
-						</th>
-						<th scope="col">產品名稱</th>
-						<th scope="col">主分類</th>
-						<th scope="col">狀態</th>
-						<th scope="col">操作</th>
-					</tr>
-				</thead>
-				<tbody>
-					{adminProducts.map((item) => (
-						<tr key={item.id} className="align-middle">
-							<td>
+			{/* 產品列表 */}
+			<div className="product-list">
+				{adminProducts.length === 0 ? (
+					<div className="empty-state">
+						<span className="empty-icon">🌶️</span>
+						<p>目前沒有產品資料</p>
+					</div>
+				) : (
+					adminProducts.map((item) => (
+						<div key={item.id} className="product-item">
+							{/* 圖片區域 */}
+							<div className="product-image-wrapper">
 								<img
 									src={item.imageUrl}
 									alt={item.title}
-									style={{
-										width: "80px",
-										height: "80px",
-										objectFit: "cover",
+									className="product-image"
+									onError={(e) => {
+										e.target.src = "https://placehold.co/80x80?text=No+Image";
 									}}
 								/>
-							</td>
-							<td>{item.title}</td>
-							<td>{item.category}</td>
-							<td>
-								<span className={`badge ${item.is_enabled === 1 ? "bg-success" : "bg-secondary"}`}>
-									{item.is_enabled === 1 ? "啟用" : "未啟用"}
-								</span>
-							</td>
-							<td>
-								<div className="d-flex align-items-center gap-1">
-									<button className="btn btn-sm btn-outline-warning me-2" onClick={() => openModal("edit", item)}>
-										編輯
-									</button>
-									<button className="btn btn-sm btn-outline-danger" onClick={() => openModal("delete", item)}>
-										刪除
-									</button>
+							</div>
+
+							{/* 產品資訊 */}
+							<div className="product-info">
+								<h3 className="product-title">{item.title}</h3>
+								<div className="product-meta">
+									<span className="product-category">{item.category}</span>
+									<span className={`product-status ${item.is_enabled === 1 ? "status-active" : "status-inactive"}`}>
+										{item.is_enabled === 1 ? "啟用" : "未啟用"}
+									</span>
 								</div>
-							</td>
-						</tr>
-					))}
-				</tbody>
-			</table>
+							</div>
+
+							{/* 操作按鈕 */}
+							<div className="product-actions">
+								<button
+									className="action-btn edit-btn"
+									onClick={() => openModal("edit", item)}
+									title="編輯產品"
+								>
+									<span className="btn-icon">✏️</span>
+									<span className="btn-text">編輯</span>
+								</button>
+								<button
+									className="action-btn delete-btn"
+									onClick={() => openModal("delete", item)}
+									title="刪除產品"
+								>
+									<span className="btn-icon">🗑️</span>
+									<span className="btn-text">刪除</span>
+								</button>
+							</div>
+						</div>
+					))
+				)}
+			</div>
 		</div>
 	);
 }

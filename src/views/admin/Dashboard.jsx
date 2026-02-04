@@ -1,13 +1,13 @@
 import axios from "axios";
-import { api, plainApi } from "../../api/axiosInstance.js";
+import { api, plainApi, clearToken } from "@/services";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 
-import ProductTable from "../../components/Admin/ProductTable.jsx";
-import Pagination from "../../components/Admin/Pagination.jsx";
-import ProductFormModal from "../../components/Admin/ProductFormModal.jsx";
-import DeleteConfirmModal from "../../components/DeleteConfirmModal.jsx";
-import AdminHeader from "../../components/Admin/AdminHeader.jsx";
+import ProductTable from "@/components/Admin/ProductTable.jsx";
+import Pagination from "@/components/Admin/Pagination.jsx";
+import ProductFormModal from "@/components/Admin/ProductFormModal.jsx";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal.jsx";
+import AdminHeader from "@/components/Admin/AdminHeader.jsx";
 import { toast } from "react-toastify";
 
 const requiredFields = [
@@ -231,8 +231,7 @@ const Dashboard = () => {
 			console.log("更新後前端看到的 num:", updatedItem?.num, typeof updatedItem?.num);
 			/* ===== 測試用 ===== */
 		} catch (error) {
-			console.error("更新/新增產品失敗:", error?.response?.data || error);
-			toast.error(`${error?.response?.data?.message}` || "操作失敗");
+			toast.error(`${error?.response?.data?.message || "操作失敗"}`);
 		}
 	};
 
@@ -350,8 +349,8 @@ const Dashboard = () => {
 			}
 		}
 
-		// 本地強制清理
-		document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+		// 使用統一的 token 清除函數
+		clearToken();
 		delete axios.defaults.headers.common["Authorization"];
 		// setIsAuth(false);
 
@@ -400,7 +399,7 @@ const Dashboard = () => {
 				ref={deleteModalRef}
 				tempProduct={tempProduct}
 				handleDeleteItem={handleDeleteItem}
-				cloaseModal={() => closeModal("delete")}
+				closeModal={() => closeModal("delete")}
 			/>
 		</>
 	);

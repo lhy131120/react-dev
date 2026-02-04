@@ -31,7 +31,7 @@ const DeleteConfirmModal = forwardRef(({ tempProduct, handleDeleteItem, closeMod
 
 	return (
 		<>
-			{/* Backdrop - 必須先渲染 */}
+			{/* 解決bootstrap 和react的沖突 Backdrop - 必須先渲染 */}
 			<div className="modal-backdrop fade show" onClick={closeModal} />
 			
 			{/* Modal */}

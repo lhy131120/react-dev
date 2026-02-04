@@ -1,5 +1,5 @@
-import { plainApi } from "../../api/axiosInstance.js";
-import { useState} from "react";
+import { plainApi, setToken } from "@/services";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 
@@ -28,17 +28,13 @@ const Login = () => {
 				throw new Error("未收到有效的 token");
 			}
 
-			// 清除舊 token
-			document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-			// 設置新 token
-			document.cookie = `hexToken=${token}; expires=${new Date(expired).toUTCString()}; path=/`;
+			// 使用統一的 token 設定函數
+			setToken(token, expired);
 
 			toast.success("登入成功");
 
 			navigate("/admin/dashboard", { replace: true });
 		} catch (error) {
-			console.error("登入錯誤完整資訊：", error);
-
 			const errMsg = error?.response?.data?.message || error?.message || "登入失敗，請檢查帳號密碼或網路連線";
 
 			toast.error(`登入失敗: ${errMsg}`, {

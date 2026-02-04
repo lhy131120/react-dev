@@ -1,95 +1,76 @@
-// const ProductCard = ({ product, openModal }) => {
-// 	return (
-// 		<div className="col">
-// 			<div className="card h-100 shadow-sm hover-shadow transition">
-// 				<img
-// 					src={product.imageUrl}
-// 					alt={product.title}
-// 					className="card-img-top"
-// 					style={{ height: "200px", objectFit: "cover" }}
-// 				/>
-// 				<div className="card-body d-flex flex-column">
-// 					<h2 className="fs-6 card-title fw-bold">{product.title}</h2>
-
-// 					<div className="mt-1">
-// 						<p className="fs-6 text-danger fw-bold mb-2">
-// 							${product.price} / {product.unit}
-// 						</p>
-// 					</div>
-
-// 					<button className="btn btn-primary mt-auto fw-bold" onClick={() => openModal("product", product)}>
-// 						<small>查看細節</small>
-// 					</button>
-// 				</div>
-// 			</div>
-// 		</div>
-// 	);
-// };
+import "@/styles/ProductCard.css";
 
 const ProductCard = ({ product, getProductDetails }) => {
+	const discountPercent = product.origin_price && product.origin_price > product.price
+		? Math.round(((product.origin_price - product.price) / product.origin_price) * 100)
+		: 0;
+
 	return (
 		<div className="col">
-			<div className="card h-100 shadow-sm hover-shadow transition">
-				<div style={{ position: 'relative', overflow: 'hidden', height: '220px' }}>
+			<div className="product-card-wrapper" onClick={() => getProductDetails(product.id)}>
+				{/* 圖片區域 */}
+				<div className="product-card-image">
 					<img
 						src={product.imageUrl}
 						alt={product.title}
-						className="card-img-top"
-						style={{ 
-							width: '100%',
-							height: '100%',
-							objectFit: "cover",
-							aspectRatio: "4 / 3"  
+						onError={(e) => {
+							e.target.src = "https://placehold.co/400x300?text=No+Image";
 						}}
 					/>
-					{product.is_enabled === 1 && (
-						<span 
-							className="badge bg-primary" 
-							style={{
-								position: 'absolute',
-								top: '10px',
-								right: '10px',
-								fontSize: '0.8rem',
-								padding: '0.5rem 0.8rem'
-							}}
-						>
-							熱銷
-						</span>
-					)}
-				</div>
-				<div className="card-body d-flex flex-column">
-					<h2 className="fs-6 card-title fw-bold mb-2">{product.title}</h2>
 					
-					{product.description && (
-						<p 
-							className="text-muted small mb-2" 
-							style={{ 
-								color: '#92400e',
-								opacity: 0.7,
-								minHeight: '40px'
-							}}
-						>
-							{product.description.substring(0, 60)}...
-						</p>
-					)}
-
-					<div className="mt-auto">
-						<p className="fs-6 fw-bold mb-3" style={{ color: '#d97706' }}>
-							NT${product.price} / {product.unit}
-						</p>
-						{product.origin_price && product.origin_price > product.price && (
-							<p className="text-decoration-line-through small" style={{ color: '#999' }}>
-								原價: NT${product.origin_price}
-							</p>
+					{/* 浮動標籤 */}
+					<div className="product-card-badges">
+						{product.is_enabled === 1 && (
+							<span className="badge-hot">🔥 熱銷</span>
+						)}
+						{discountPercent > 0 && (
+							<span className="badge-discount">-{discountPercent}%</span>
 						)}
 					</div>
 
-					<button 
-						className="btn btn-primary mt-3 fw-bold w-100" 
-						onClick={() => getProductDetails(product.id)}
-					>
-						查看詳細
-					</button>
+					{/* Hover 遮罩 */}
+					<div className="product-card-overlay">
+						<span className="view-detail-btn">
+							<span className="btn-icon">👁️</span>
+							查看詳細
+						</span>
+					</div>
+				</div>
+
+				{/* 資訊區域 */}
+				<div className="product-card-content">
+					{/* 分類標籤 */}
+					<span className="product-card-category">{product.category}</span>
+					
+					{/* 標題 */}
+					<h3 className="product-card-title">{product.title}</h3>
+					
+					{/* 描述 */}
+					{product.description && (
+						<p className="product-card-desc">
+							{product.description.length > 50 
+								? product.description.substring(0, 50) + "..." 
+								: product.description}
+						</p>
+					)}
+
+					{/* 價格區域 */}
+					<div className="product-card-price-section">
+						<div className="price-wrapper">
+							<span className="current-price">NT${product.price}</span>
+							<span className="price-unit">/ {product.unit}</span>
+						</div>
+						{product.origin_price && product.origin_price > product.price && (
+							<span className="original-price">NT${product.origin_price}</span>
+						)}
+					</div>
+
+					{/* 底部操作區 */}
+					<div className="product-card-footer">
+						<button className="add-to-cart-btn">
+							<span>🛒</span> 加入購物車
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>

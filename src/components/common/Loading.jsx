@@ -1,5 +1,5 @@
-import { useLoading } from "../context/LoadingContext";
-import "../styles/Loading.css";
+import { useLoading } from "@/hooks";
+import "@/styles/Loading.css";
 
 const Loading = () => {
 	const { isLoading } = useLoading();
