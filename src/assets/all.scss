@@ -113,3 +113,55 @@ $tropical-yellow: #fcd34d;
     transform: none;
   }
 }
+
+// ==========================================
+// 自訂 Scrollbar 樣式 - 熱帶調味料主題
+// ==========================================
+
+// Webkit 瀏覽器 (Chrome, Safari, Edge)
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fef3c7; // 淺黃色背景
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, $primary 0%, $secondary 100%);
+  border-radius: 5px;
+  border: 2px solid #fef3c7;
+  transition: background 0.2s ease;
+  
+  &:hover {
+    background: linear-gradient(180deg, $tropical-coral 0%, $primary 100%);
+  }
+  
+  &:active {
+    background: $tropical-brown;
+  }
+}
+
+::-webkit-scrollbar-corner {
+  background: #fef3c7;
+}
+
+// Firefox
+* {
+  scrollbar-width: thin;
+  scrollbar-color: $primary #fef3c7;
+}
+
+// 特定元素的 scrollbar 樣式（較細版本）
+.scrollbar-thin {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    border: 1px solid #fef3c7;
+  }
+}

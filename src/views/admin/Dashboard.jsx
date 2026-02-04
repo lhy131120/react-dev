@@ -352,7 +352,6 @@ const Dashboard = () => {
 		// 使用統一的 token 清除函數
 		clearToken();
 		delete axios.defaults.headers.common["Authorization"];
-		// setIsAuth(false);
 
 		// 導向到首頁
 		navigate("/", { replace: true });

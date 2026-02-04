@@ -148,6 +148,7 @@ const Cart = () => {
 							<button
 								type="button"
 								className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1 ms-auto"
+								style={{ whiteSpace: "nowrap" }}
 								onClick={() => handleRemoveAllCart()}
 							>
 								<span className="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>刪除所有
@@ -174,7 +175,7 @@ const Cart = () => {
 													alt=""
 												/>
 											</td>
-											<td>{cart.product["title"]}</td>
+											<td style={{ whiteSpace: "nowrap" }}>{cart.product["title"]}</td>
 											<td>
 												<div className="d-flex align-items-center gap-2">
 													<button
@@ -214,6 +215,7 @@ const Cart = () => {
 												<button
 													type="button"
 													className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1"
+													style={{ whiteSpace: "nowrap" }}
 													onClick={() => handleRemoveCart(cart.id)}
 													disabled={updatingCarts.has(cart.id)} // ← 改用 per-item
 												>
