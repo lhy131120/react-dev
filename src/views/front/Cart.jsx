@@ -245,6 +245,8 @@ const Cart = () => {
 								</tfoot>
 							</table>
 						</div>
+
+            <hr />
 					</>
 				)}
 			</div>

@@ -38,7 +38,8 @@ const requestInterceptor = (config) => {
 
 	// 檢查是否需要顯示 loading（預設顯示，除非 config.silent = true）
 	if (!config.silent) {
-		const requestId = `${config.method}-${config.url}-${Date.now()}`;
+    const requestId = `${config.method}-${config.url}-${Date.now()}`;
+    console.log(requestId, config);
 		config._requestId = requestId;
 		pendingRequests.add(requestId);
 		
