@@ -17,15 +17,11 @@ const ProductCard = ({ product, getProductDetails }) => {
 							e.target.src = "https://placehold.co/400x300?text=No+Image";
 						}}
 					/>
-					
+
 					{/* 浮動標籤 */}
 					<div className="product-card-badges">
-						{product.is_enabled === 1 && (
-							<span className="badge-hot">🔥 熱銷</span>
-						)}
-						{discountPercent > 0 && (
-							<span className="badge-discount">-{discountPercent}%</span>
-						)}
+						{product.is_enabled === 1 && <span className="badge-hot">🔥 熱銷</span>}
+						{discountPercent > 0 && <span className="badge-discount">-{discountPercent}%</span>}
 					</div>
 
 					{/* Hover 遮罩 */}
@@ -40,17 +36,15 @@ const ProductCard = ({ product, getProductDetails }) => {
 				{/* 資訊區域 */}
 				<div className="product-card-content">
 					{/* 分類標籤 */}
-					<span className="product-card-category">{product.category}</span>
-					
+					<span className="product-card-category">{product.subcategory}</span>
+
 					{/* 標題 */}
 					<h3 className="product-card-title">{product.title}</h3>
-					
+
 					{/* 描述 */}
 					{product.description && (
 						<p className="product-card-desc">
-							{product.description.length > 50 
-								? product.description.substring(0, 50) + "..." 
-								: product.description}
+							{product.description.length > 50 ? product.description.substring(0, 50) + "..." : product.description}
 						</p>
 					)}
 

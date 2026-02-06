@@ -271,13 +271,20 @@
 }
 
 /* 手機裝置 */
+@media (max-width: 768px) {
+  .product-card-image {
+    height: 350px;
+  }
+}
+
 @media (max-width: 576px) {
+
+  .product-card-image {
+      height: 240px;
+    }
+
 	.product-card-wrapper {
 		border-radius: 12px;
-	}
-	
-	.product-card-image {
-		height: 180px;
 	}
 	
 	.product-card-badges {
