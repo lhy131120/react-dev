@@ -1,6 +1,7 @@
 import { api } from "@/services";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
+import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 
 const Cart = () => {
 	const [tempCarts, setTempCarts] = useState([]);
@@ -9,6 +10,10 @@ const Cart = () => {
 	const [updatingCarts, setUpdatingCarts] = useState(new Set());
 
 	const [isClearingAll, setIsClearingAll] = useState(false);
+
+	// 刪除確認 Modal
+	const deleteModalRef = useRef(null);
+	const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'single' | 'all', cart?: object }
 
 	const getCart = useCallback(async () => {
 		try {
@@ -131,6 +136,28 @@ const Cart = () => {
 		}
 	};
 
+	// 開啟刪除確認 Modal
+	const openDeleteConfirm = (type, cart = null) => {
+		setDeleteTarget({ type, cart });
+		deleteModalRef.current?.show();
+	};
+
+	// 關閉 Modal
+	const closeDeleteModal = () => {
+		deleteModalRef.current?.hide();
+		setDeleteTarget(null);
+	};
+
+	// 確認刪除
+	const confirmDelete = () => {
+		if (deleteTarget?.type === "single" && deleteTarget.cart) {
+			handleRemoveCart(deleteTarget.cart.id);
+		} else if (deleteTarget?.type === "all") {
+			handleRemoveAllCart();
+		}
+		closeDeleteModal();
+	};
+
 	useEffect(() => {
 		getCart();
 		return () => {};
@@ -149,7 +176,7 @@ const Cart = () => {
 								type="button"
 								className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1 ms-auto"
 								style={{ whiteSpace: "nowrap" }}
-								onClick={() => handleRemoveAllCart()}
+								onClick={() => openDeleteConfirm("all")}
 							>
 								<span className="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>刪除所有
 							</button>
@@ -175,7 +202,14 @@ const Cart = () => {
 													alt=""
 												/>
 											</td>
-											<td style={{ whiteSpace: "nowrap" }}>{cart.product["title"]}</td>
+											<td style={{ whiteSpace: "nowrap" }}>
+												<div>{cart.product?.title}</div>
+												{cart.product?.flavor && cart.product.flavor.length > 0 && (
+													<small className="text-muted">
+														口味：{cart.product.flavor.join("、")}
+													</small>
+												)}
+											</td>
 											<td>
 												<div className="d-flex align-items-center gap-2">
 													<button
@@ -216,8 +250,8 @@ const Cart = () => {
 													type="button"
 													className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1"
 													style={{ whiteSpace: "nowrap" }}
-													onClick={() => handleRemoveCart(cart.id)}
-													disabled={updatingCarts.has(cart.id)} // ← 改用 per-item
+													onClick={() => openDeleteConfirm("single", cart)}
+													disabled={updatingCarts.has(cart.id)}
 												>
 													<span
 														className={`spinner-border spinner-border-sm ${updatingCarts.has(cart.id) ? "d-block" : "d-none"}`}
@@ -250,6 +284,20 @@ const Cart = () => {
 					</>
 				)}
 			</div>
+
+			{/* 刪除確認 Modal */}
+			<DeleteConfirmModal
+				ref={deleteModalRef}
+				tempProduct={{
+					id: deleteTarget?.cart?.id || "all",
+					title:
+						deleteTarget?.type === "all"
+							? "所有購物車商品"
+							: deleteTarget?.cart?.product?.title,
+				}}
+				handleDeleteItem={confirmDelete}
+				closeModal={closeDeleteModal}
+			/>
 		</>
 	);
 };

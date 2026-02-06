@@ -1,5 +1,5 @@
 import { api } from "@/services";
-import { useState, useEffect, useEffectEvent, useMemo } from "react";
+import { useState, useEffect, useEffectEvent, useMemo, useCallback } from "react";
 import ProductCard from "@/components/ProductCard.jsx";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
@@ -9,13 +9,11 @@ const Products = () => {
 	const [products, setProducts] = useState([]);
 	const [selectedCategory, setSelectedCategory] = useState("all");
 
-	// 用 useMemo 計算分類選項
 	const options = useMemo(
 		() => [...new Set(products.map((product) => product.subcategory))],
 		[products]
 	);
 
-	// 用 useMemo 計算篩選後的產品
 	const filteredProducts = useMemo(
 		() =>
 			selectedCategory === "all"
@@ -38,9 +36,13 @@ const Products = () => {
 		}
 	});
 
-	const getProductDetails = (id) => {
-		navigate(`/product/${id}`);
-	};
+	// 使用 useCallback 避免每次渲染都建立新函式
+	const getProductDetails = useCallback(
+		(id) => {
+			navigate(`/product/${id}`);
+		},
+		[navigate]
+	);
 
 	useEffect(() => {
 		getProducts();

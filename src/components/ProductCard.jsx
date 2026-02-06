@@ -1,9 +1,11 @@
 import "@/styles/ProductCard.css";
+import { memo } from "react";
 
-const ProductCard = ({ product, getProductDetails }) => {
-	const discountPercent = product.origin_price && product.origin_price > product.price
-		? Math.round(((product.origin_price - product.price) / product.origin_price) * 100)
-		: 0;
+const ProductCard = memo(({ product, getProductDetails }) => {
+	const discountPercent =
+		product.origin_price && product.origin_price > product.price
+			? Math.round(((product.origin_price - product.price) / product.origin_price) * 100)
+			: 0;
 
 	return (
 		<div className="col">
@@ -69,6 +71,6 @@ const ProductCard = ({ product, getProductDetails }) => {
 			</div>
 		</div>
 	);
-};
+});
 
 export default ProductCard;

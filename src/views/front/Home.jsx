@@ -40,7 +40,7 @@ const Home = () => {
 				<p className="swiper-page-subtitle">探索來自世界各地的優質調味料，為您的廚房增添異域風情</p>
 			</div>
 
-			{/* 產品輪播 */}
+			{/* 產品swiper */}
 			{products.length > 0 ? (
 				<div className="swiper-container">
 					<Swiper
@@ -51,14 +51,9 @@ const Home = () => {
 						autoplay={{ delay: 5000, disableOnInteraction: false }}
 						speed={600}
 						loop={true}
-						slidesPerView={1}
+						slidesPerView="auto"
 						spaceBetween={16}
-						breakpoints={{
-							640: { slidesPerView: 2, spaceBetween: 20 },
-							768: { slidesPerView: 3, spaceBetween: 16 },
-							1024: { slidesPerView: 4, spaceBetween: 12 },
-							1280: { slidesPerView: 5, spaceBetween: 12 },
-						}}
+						centeredSlides={true}
 						className="product-swiper"
 					>
 						{products.map((product) => (
