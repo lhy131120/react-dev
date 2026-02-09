@@ -106,7 +106,7 @@ const Login = () => {
 	});
 
 	const onSubmit = async (data) => {
-		console.log(data);
+		// console.log(data);
 		setIsLoading(true);
 
 		try {
