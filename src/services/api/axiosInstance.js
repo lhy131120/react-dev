@@ -84,7 +84,7 @@ const responseErrorHandler = (error) => {
 	if (response?.status === 401) {
 		console.warn("Token 無效或過期，需重新登入");
 		document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-		window.location.href = "/#/login";
+		window.location.href = `${import.meta.env.BASE_URL}#/login`;
 	}
 
 	return Promise.reject(error);
