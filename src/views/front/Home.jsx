@@ -48,11 +48,9 @@ const Home = () => {
 						grabCursor={true}
 						pagination={{ clickable: true, dynamicBullets: true }}
 						navigation={true}
-						autoplay={{ delay: 5000, disableOnInteraction: false }}
 						speed={600}
 						loop={true}
 						slidesPerView="auto"
-						spaceBetween={16}
 						centeredSlides={true}
 						className="product-swiper"
 					>
