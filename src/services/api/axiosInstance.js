@@ -97,6 +97,3 @@ plainApi.interceptors.request.use(requestInterceptor);
 api.interceptors.response.use(responseSuccessHandler, responseErrorHandler);
 plainApi.interceptors.response.use(responseSuccessHandler, responseErrorHandler);
 
-export { getTokenFromCookie } from "./config";
-
-export default api;

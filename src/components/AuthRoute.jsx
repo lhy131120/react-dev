@@ -29,12 +29,10 @@ const AuthRoute = () => {
 		return <h2 className="text-center py-5">檢查登入狀態中...</h2>;
 	}
 
-	// 已登入用戶不應該看到登入頁 → 導向後台
 	if (isAuthenticated) {
 		return <Navigate to="/admin/dashboard" replace />;
 	}
 
-	// 未登入 → 顯示登入頁
 	return <Outlet />;
 };
 

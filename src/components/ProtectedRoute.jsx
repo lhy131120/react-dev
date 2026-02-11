@@ -17,6 +17,7 @@ const ProtectedRoute = () => {
 				if (isMounted) setIsAuthenticated(false);
 			}
 		};
+    
 		checkAuth();
 
 		return () => {
