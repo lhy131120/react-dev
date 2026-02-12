@@ -286,8 +286,6 @@ const Dashboard = () => {
 	};
 
 	const getAdminProducts = async (page = 1) => {
-		// setAdminLoading(true);
-		// setAdminError(null);
 
 		try {
 			const response = await api.get(`/admin/products?page=${page}`);
@@ -322,8 +320,6 @@ const Dashboard = () => {
 			// 	setAdminError("載入產品失敗，請稍後再試");
 			// }
 			setAdminProducts([]); // clear old data
-		} finally {
-			// setAdminLoading(false);
 		}
 	};
 

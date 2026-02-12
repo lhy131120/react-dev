@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_BASE, API_PATH, getTokenFromCookie } from "./config";
+import { API_BASE, API_PATH, getTokenFromCookie  } from "./config";
 
 // Loading 控制器（將在 App 初始化時注入）
 let loadingController = {

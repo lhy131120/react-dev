@@ -1,24 +1,19 @@
-import { useEffect, useMemo, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchProducts, setCategory } from "@/store/productsSlice";
+import { api } from "@/services";
+import { useState, useEffect, useEffectEvent, useMemo, useCallback } from "react";
 import ProductCard from "@/components/ProductCard.jsx";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 
 const Products = () => {
 	const navigate = useNavigate();
-	const dispatch = useDispatch();
+	const [products, setProducts] = useState([]);
+	const [selectedCategory, setSelectedCategory] = useState("all");
 
-	// 從 Redux store 讀取狀態
-	const { products, selectedCategory } = useSelector((state) => state.products);
-
-	// 從產品列表計算分類選項
 	const options = useMemo(
 		() => [...new Set(products.map((product) => product.subcategory))],
 		[products]
 	);
 
-	// 根據選擇的分類過濾產品
 	const filteredProducts = useMemo(
 		() =>
 			selectedCategory === "all"
@@ -27,6 +22,21 @@ const Products = () => {
 		[products, selectedCategory]
 	);
 
+	const getProducts = useEffectEvent(async () => {
+		try {
+			const response = await api.get("/products/all");
+			const { products } = response.data;
+			const productArr = Object.keys(products).map((id) => ({
+				id,
+				...products[id],
+			}));
+			setProducts(productArr);
+		} catch (error) {
+			toast.error(`取得產品列表失敗: ${error?.response?.data?.message || "請稍後再試"}`);
+		}
+	});
+
+	// 使用 useCallback 避免每次渲染都建立新函式
 	const getProductDetails = useCallback(
 		(id) => {
 			navigate(`/product/${id}`);
@@ -35,13 +45,8 @@ const Products = () => {
 	);
 
 	useEffect(() => {
-		// 只有當產品列表為空時才拉取（避免頁面切換重複請求）
-		if (products.length === 0) {
-			dispatch(fetchProducts())
-				.unwrap()
-				.catch((msg) => toast.error(`取得產品列表失敗: ${msg}`));
-		}
-	}, [dispatch, products.length]);
+		getProducts();
+	}, []);
 
 	return (
 		<>
@@ -59,7 +64,7 @@ const Products = () => {
 							className="form-select w-auto"
 							aria-label="Product Category Filter"
 							value={selectedCategory}
-							onChange={(e) => dispatch(setCategory(e.target.value))}
+							onChange={(e) => setSelectedCategory(e.target.value)}
 						>
 							<option value="all">全部分類</option>
 							{options.map((option) => (

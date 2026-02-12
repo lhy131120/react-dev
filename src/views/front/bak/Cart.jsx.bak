@@ -1,63 +1,137 @@
-import { useEffect, useRef, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchCart, updateCartItem, removeCartItem, clearCart, optimisticUpdateQty } from "@/store/cartSlice";
+import { api } from "@/services";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "react-toastify";
 import DeleteConfirmModal from "@/components/DeleteConfirmModal";
 
 const Cart = () => {
-	const dispatch = useDispatch();
-	const { carts, total: cartTotal, finalTotal, isClearingAll, updatingIds } = useSelector((state) => state.cart);
+	const [tempCarts, setTempCarts] = useState([]);
+	const [cartTotal, setcartTotal] = useState(null);
+	const [finalTotal, setFinalTotal] = useState(null);
+	const [updatingCarts, setUpdatingCarts] = useState(new Set());
+	const [isClearingAll, setIsClearingAll] = useState(false);
 
 	// 刪除確認 Modal
 	const deleteModalRef = useRef(null);
 	const [deleteTarget, setDeleteTarget] = useState(null); // { type: 'single' | 'all', cart?: object }
 
+	const getCart = useCallback(async () => {
+		try {
+			const response = await api.get(`/cart`);
+			const { final_total, total, carts } = response.data.data;
+
+			setTempCarts([...carts]);
+			setcartTotal(total);
+			setFinalTotal(final_total);
+
+			toast.success(`取得購物車成功!`);
+		} catch (error) {
+			toast.error(`取得購物車失敗: ${error.response?.data?.message}`);
+		}
+	}, []);
+
 	const handleUpdateQty = async (cartId, newQty) => {
+		// 轉型Number
 		const safeQty = Math.max(1, Number(newQty));
 		if (isNaN(safeQty) || safeQty < 1) return;
 
-		const cartItem = carts.find((item) => item.id === cartId);
-		if (!cartItem || safeQty === cartItem.qty) return;
+		const cartItem = tempCarts.find((item) => item.id === cartId);
+		if (!cartItem) return;
 
-		// 保留原始數量，用於失敗時回滾
-		const previousQty = cartItem.qty;
+		if (safeQty === cartItem.qty) return;
 
-		// OptimisticUpdate UI
-		dispatch(optimisticUpdateQty({ cartId, qty: safeQty }));
+		setTempCarts((prevCarts) => prevCarts.map((item) => (item.id === cartId ? { ...item, qty: safeQty } : item)));
+		setUpdatingCarts((prev) => new Set([...prev, cartId]));
 
 		try {
-			await dispatch(updateCartItem({ cartId, productId: cartItem.product?.id, qty: safeQty })).unwrap();
+			const payload = {
+				data: {
+					product_id: cartItem.product?.id,
+					qty: safeQty,
+				},
+			};
 
-			await dispatch(fetchCart()).unwrap();
-			toast.success("成功更新數量！");
-		} catch (message) {
-			dispatch(optimisticUpdateQty({ cartId, qty: previousQty }));
-			toast.error(`更新購物車數量失敗: ${message}`);
+			const response = await api.put(`/cart/${cartId}`, payload);
+
+			await getCart(); // 如果後端有其他計算（如折扣），建議重新拉一次
+
+			// console.log(`購物車項目 ${cartId} 數量更新為 ${safeQty}`);
+
+			toast.success(`${response.data?.message || "成功更新"}!`);
+			// console.log(response.data.message)
+		} catch (error) {
+			// 失敗時回滾 UI
+			setTempCarts((prevCarts) =>
+				prevCarts.map((item) => (item.id === cartId ? { ...item, qty: cartItem.qty } : item))
+			);
+
+			toast.error(`更新購物車數量失敗: ${error.response?.data?.message}`);
+		} finally {
+			// 結束 loading 狀態
+			setUpdatingCarts((prev) => {
+				const next = new Set(prev);
+				next.delete(cartId);
+				return next;
+			});
 		}
 	};
 
 	const handleRemoveCart = async (cartId) => {
-		if (updatingIds.includes(cartId)) return;
+		if (updatingCarts.has(cartId)) return;
+
+		const removedItem = tempCarts.find((item) => item.id === cartId);
+		setTempCarts((prev) => prev.filter((item) => item.id !== cartId));
+		setUpdatingCarts((prev) => new Set([...prev, cartId]));
 
 		try {
-			const result = await dispatch(removeCartItem(cartId)).unwrap();
-			toast.success(`產品已移除！${result.message || ""}`);
-			await dispatch(fetchCart()).unwrap();
-		} catch (message) {
-			toast.error(`刪除失敗：${message || "請稍後再試"}`);
+			const response = await api.delete(`/cart/${cartId}`);
+
+			toast.success(`產品已移除！${response.data.message || ""}`);
+
+			await getCart();
+		} catch (error) {
+			// 失敗 → 回滾 UI
+			if (removedItem) {
+				setTempCarts((prev) => [...prev, removedItem]); // 放回原位（或依序插入）
+			}
+
+			toast.error(`刪除失敗：${error.response?.data?.message || "請稍後再試"}`);
+		} finally {
+			// 移除 loading 標記
+			setUpdatingCarts((prev) => {
+				const next = new Set(prev);
+				next.delete(cartId);
+				return next;
+			});
 		}
 	};
 
 	const handleRemoveAllCart = async () => {
-		if (isClearingAll || carts.length === 0) return;
+		if (isClearingAll || tempCarts.length === 0) return;
+
+		// 錯誤時回復用
+		const backupCarts = [...tempCarts];
+		const backupTotal = cartTotal;
+		const backupFinalTotal = finalTotal;
+
+		setTempCarts([]);
+		setcartTotal(0);
+		setFinalTotal(0);
+		setIsClearingAll(true);
 
 		try {
-			const result = await dispatch(clearCart()).unwrap();
-			toast.success(`購物車已清空！${result.message || ""}`);
-		} catch (message) {
-			toast.error(`清空購物車失敗：${message || "請稍後再試"}`);
-			// 清空失敗時重新拉取還原
-			dispatch(fetchCart());
+			const response = await api.delete(`/carts`);
+
+			toast.success(`購物車已清空！${response.data.message || ""}`);
+
+			await getCart();
+		} catch (error) {
+			setTempCarts(backupCarts);
+			setcartTotal(backupTotal);
+			setFinalTotal(backupFinalTotal);
+
+			toast.error(`清空購物車失敗 "口"''：${error.response?.data?.message || "請稍後再試"}`);
+		} finally {
+			setIsClearingAll(false);
 		}
 	};
 
@@ -84,17 +158,15 @@ const Cart = () => {
 	};
 
 	useEffect(() => {
-		dispatch(fetchCart())
-			.unwrap()
-			.then(() => toast.success("取得購物車成功!"))
-			.catch((msg) => toast.error(`取得購物車失敗: ${msg}`));
-	}, [dispatch]);
+		getCart();
+		return () => {};
+	}, [getCart]);
 
 	return (
 		<>
 			<h2 className="fs-4 fw-bold text-primary mb-4">購物車</h2>
 			<div className="bg-white p-2 rounded-3">
-				{carts.length === 0 ? (
+				{tempCarts.length === 0 ? (
 					<h2 className="text-center mb-0 py-5 text-primary">目前購物車空空 `A'</h2>
 				) : (
 					<>
@@ -120,7 +192,7 @@ const Cart = () => {
 									</tr>
 								</thead>
 								<tbody>
-									{carts.map((cart) => (
+									{tempCarts.map((cart) => (
 										<tr key={cart.id}>
 											<td style={{ width: "100px" }}>
 												<img
@@ -143,7 +215,7 @@ const Cart = () => {
 														type="button"
 														className="cart-qty-btn"
 														onClick={() => handleUpdateQty(cart.id, cart.qty - 1)}
-														disabled={cart.qty <= 1 || updatingIds.includes(cart.id)}
+														disabled={cart.qty <= 1 || updatingCarts.has(cart.id)}
 													>
 														−
 													</button>
@@ -152,7 +224,7 @@ const Cart = () => {
 														className="cart-qty-select"
 														value={cart.qty}
 														onChange={(e) => handleUpdateQty(cart.id, Number(e.target.value))}
-														disabled={updatingIds.includes(cart.id)}
+														disabled={updatingCarts.has(cart.id)}
 													>
 														{Array.from({ length: 20 }, (_, i) => i + 1).map((num) => (
 															<option key={num} value={num}>
@@ -165,7 +237,7 @@ const Cart = () => {
 														type="button"
 														className="cart-qty-btn"
 														onClick={() => handleUpdateQty(cart.id, cart.qty + 1)}
-														disabled={cart.qty >= cart.product.stock || updatingIds.includes(cart.id)}
+														disabled={cart.qty >= cart.product.stock || updatingCarts.has(cart.id)}
 													>
 														+
 													</button>
@@ -178,13 +250,13 @@ const Cart = () => {
 													className="btn btn-sm btn-danger border-2 text-white d-flex align-items-center gap-1"
 													style={{ whiteSpace: "nowrap" }}
 													onClick={() => openDeleteConfirm("single", cart)}
-													disabled={updatingIds.includes(cart.id)}
+													disabled={updatingCarts.has(cart.id)}
 												>
 													<span
-														className={`spinner-border spinner-border-sm ${updatingIds.includes(cart.id) ? "d-block" : "d-none"}`}
+														className={`spinner-border spinner-border-sm ${updatingCarts.has(cart.id) ? "d-block" : "d-none"}`}
 														aria-hidden="true"
 													></span>
-													{updatingIds.includes(cart.id) ? "刪除中..." : "刪除"}
+													{updatingCarts.has(cart.id) ? "刪除中..." : "刪除"}
 												</button>
 											</td>
 										</tr>

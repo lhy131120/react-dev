@@ -1,7 +1,8 @@
 import { api } from "@/services";
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
-import { useEffectEvent } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchProduct, clearSelectedProduct } from "@/store/productsSlice";
 import { toast } from "react-toastify";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Thumbs, FreeMode, Zoom } from "swiper/modules";
@@ -14,36 +15,46 @@ import "@/styles/ProductDetail.css";
 
 const Product = () => {
 	const navigate = useNavigate();
+	const dispatch = useDispatch();
 	const { id } = useParams();
-	const [tempProduct, setTempProduct] = useState(null);
-	const [loading, setLoading] = useState(false);
+
+	// 從 Redux store 讀取單一產品
+	const { selectedProduct: tempProduct } = useSelector((state) => state.products);
+
 	const [thumbsSwiper, setThumbsSwiper] = useState(null);
 	const [quantity, setQuantity] = useState(1);
 	const [selectedFlavor, setSelectedFlavor] = useState(null);
+	const [loading, setLoading] = useState(false);
 
-	const getProduct = useEffectEvent(async () => {
-		try {
-			const response = await api.get(`/product/${id}`);
-			const { product } = response.data;
-			setTempProduct(product);
-			// 預設選擇第一個口味
-			if (product.flavor && product.flavor.length > 0) {
-				setSelectedFlavor(product.flavor[0]);
-			}
-		} catch (error) {
-			toast.error(`取得產品失敗: ${error.response?.data?.message}`, {
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
+	// 拉取產品詳情
+	useEffect(() => {
+		dispatch(fetchProduct(id))
+			.unwrap()
+			.then((product) => {
+				// 預設選擇第一個口味
+				if (product.flavor && product.flavor.length > 0) {
+					setSelectedFlavor(product.flavor[0]);
+				}
+			})
+			.catch((msg) => {
+				toast.error(`取得產品失敗: ${msg}`, {
+					autoClose: 3000,
+					hideProgressBar: false,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					theme: "colored",
+				});
+				setTimeout(() => {
+					navigate("/products");
+				}, 1500);
 			});
-			setTimeout(() => {
-				navigate(`/products`);
-			}, 1500);
-		}
-	});
+
+		// 離開頁面時清空，避免下次進入時閃現舊資料
+		return () => {
+			dispatch(clearSelectedProduct());
+		};
+	}, [id, dispatch, navigate]);
 
 	const handleAddCart = async (id, qty = quantity) => {
 		setLoading(true);
@@ -99,10 +110,6 @@ const Product = () => {
 		}
 		return Math.round(((tempProduct.origin_price - tempProduct.price) / tempProduct.origin_price) * 100);
 	};
-
-	useEffect(() => {
-		getProduct();
-	}, [id]);
 
 	const allImages = getAllImages();
 	const discountPercent = getDiscountPercent();
