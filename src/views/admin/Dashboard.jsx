@@ -1,4 +1,3 @@
-import { api } from "@/services";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
@@ -12,19 +11,6 @@ import DeleteConfirmModal from "@/components/DeleteConfirmModal.jsx";
 import AdminHeader from "@/components/Admin/AdminHeader.jsx";
 import { toast } from "react-toastify";
 
-const requiredFields = [
-	"category",
-	"subcategory",
-	"content",
-	"description",
-	"origin_price",
-	"price",
-	"title",
-	"unit",
-	"num",
-	"imageUrl",
-];
-
 const Dashboard = () => {
 	const navigate = useNavigate();
 	const dispatch = useDispatch();
@@ -33,27 +19,15 @@ const Dashboard = () => {
 	const { products: adminProducts, pagination, currentPage } = useSelector((state) => state.adminProducts);
 
 	const [tempProduct, setTempProduct] = useState(null);
-	const [formErrors, setFormErrors] = useState({});
 
 	// Modal refs
 	const adminModalRef = useRef(null);
 	const deleteModalRef = useRef(null);
 
-	// Image upload states
-	const [uploadingImages, setUploadingImages] = useState(false);
-	const [previewImage, setPreviewImage] = useState(null);
-	const [selectedFile, setSelectedFile] = useState(null);
-	const [isUploading, setIsUploading] = useState(false);
-	const uploadImageInputRef = useRef(null);
-
 	// ────────────────────────────────────────────────
-	//  Utility Functions
+	//  Modal 操作
 	// ────────────────────────────────────────────────
 	const openModal = (type, item = null) => {
-		if (type === "edit" || type === "newItem") {
-			setFormErrors({});
-		}
-
 		if (type === "edit") {
 			setTempProduct({ ...item });
 			adminModalRef.current?.show();
@@ -67,7 +41,7 @@ const Dashboard = () => {
 				price: 1,
 				title: "",
 				unit: "",
-				num: Number(1),
+				num: 1,
 				imageUrl: "https://placehold.co/600x400?text=No+Image",
 				imagesUrl: [],
 				is_enabled: 1,
@@ -77,174 +51,29 @@ const Dashboard = () => {
 		} else if (type === "delete") {
 			setTempProduct(item);
 			deleteModalRef.current?.show();
-		} else {
-			// 未知的 modal type
 		}
 	};
 
 	const closeModal = (type) => {
 		if (type === "edit" || type === "newItem") {
 			adminModalRef.current?.hide();
-			setFormErrors({});
-			// ★ 新增：關閉 admin modal 時，重設圖片上傳相關 state
-			setUploadingImages(false);
-			setPreviewImage(null);
-			setSelectedFile(null);
-			setIsUploading(false);
-			if (uploadImageInputRef.current) {
-				uploadImageInputRef.current.value = "";
-			}
 		} else if (type === "delete") {
 			deleteModalRef.current?.hide();
 		}
-
-		// 所有 modal 關閉後統一清空 tempProduct
 		setTempProduct(null);
-
-		if (uploadImageInputRef.current) {
-			uploadImageInputRef.current.value = ""; // 清空 input
-		}
 	};
 
-	const handleModalInputChange = (e) => {
-		const { id, value, type, checked } = e.target;
-
-		let newValue = type === "checkbox" ? (checked ? 1 : 0) : value;
-
-		// 數字欄位強制轉 number
-		if (["origin_price", "price", "num"].includes(id)) {
-			newValue = value === "" ? "" : Number(value);
-			// 如果是 NaN，強制設為 0 或保持原值
-			if (isNaN(newValue)) newValue = 0;
-		}
-
-		setTempProduct((prev) => ({
-			...prev,
-			[id]: newValue,
-		}));
-
-		// 即時驗證單一欄位
-		setFormErrors((prev) => {
-			const newErrors = { ...prev };
-
-			// 必填檢查
-			if (requiredFields.includes(id)) {
-				if (!newValue && newValue !== 0) {
-					newErrors[id] = "此欄位為必填";
-				} else {
-					delete newErrors[id];
-				}
-			}
-
-			// 數字 > 0 檢查
-			if (id === "origin_price") {
-				if (newValue <= 0) {
-					newErrors[id] = "原價必須大於 0";
-				} else {
-					delete newErrors[id];
-				}
-			} else if (id === "price") {
-				if (newValue <= 0) {
-					newErrors[id] = "售價必須大於 0";
-				} else {
-					delete newErrors[id];
-				}
-			} else if (id === "num") {
-				if (newValue < 0) {
-					newErrors[id] = "數量不能小於 0";
-				} else {
-					delete newErrors[id];
-				}
-			}
-
-			return newErrors;
-		});
-	};
-
-	const validateForm = () => {
-		const errors = {};
-
-		requiredFields.forEach((field) => {
-			if (!tempProduct?.[field] && tempProduct?.[field] !== 0) {
-				errors[field] = "此欄位為必填";
-			}
-		});
-
-		// 數字欄位 > 0 檢查
-		if (tempProduct?.origin_price <= 0) {
-			errors.origin_price = "原價必須大於 0";
-		}
-		if (tempProduct?.price <= 0) {
-			errors.price = "售價必須大於 0";
-		}
-
-		setFormErrors(errors);
-		return Object.keys(errors).length === 0; // true 表示驗證通過
-	};
-
-	const updateProduct = async () => {
-		if (!validateForm()) {
-			toast.info(`請修正表單中的錯誤 OwO'! `);
-			return;
-		}
-
+	// ────────────────────────────────────────────────
+	//  CRUD 操作
+	// ────────────────────────────────────────────────
+	const handleSaveProduct = async (data) => {
 		try {
-			const result = await dispatch(saveProduct(tempProduct)).unwrap();
+			const result = await dispatch(saveProduct(data)).unwrap();
 			toast.success(`${result.message}` || "操作成功");
-			closeModal(tempProduct.id ? "edit" : "newItem");
+			closeModal(data.id ? "edit" : "newItem");
 			await dispatch(fetchAdminProducts(currentPage)).unwrap();
 		} catch (error) {
 			toast.error(`${error || "操作失敗"}`);
-		}
-	};
-
-	const uploadImage = async () => {
-		try {
-			const file = uploadImageInputRef.current.files[0];
-			const formData = new FormData();
-			formData.append("file-to-upload", file);
-			const response = await api.post("/admin/upload", formData);
-			const { imageUrl } = response.data;
-
-			setTempProduct({
-				...tempProduct,
-				imageUrl,
-			});
-		} catch (error) {
-			toast.error(`${error?.response?.data?.message}` || "上傳圖片失敗");
-		}
-	};
-
-	const handleUploadImage = async () => {
-		if (!selectedFile) return;
-
-		setIsUploading(true);
-
-		try {
-			const formData = new FormData();
-			formData.append("file-to-upload", selectedFile);
-
-			const response = await api.post("/admin/upload", formData);
-
-			const { imageUrl } = response.data;
-
-			// 上傳成功：加入 imagesUrl 陣列
-			setTempProduct((prev) => ({
-				...prev,
-				imagesUrl: [...(prev.imagesUrl || []), imageUrl],
-			}));
-
-			toast.success("圖片上傳成功！");
-		} catch (error) {
-			toast.error(`${error?.response?.data?.message}` || "上傳圖片失敗");
-		} finally {
-			setUploadingImages(false); // 上傳完自動關閉區塊
-			setPreviewImage(null);
-			setSelectedFile(null);
-			setIsUploading(false);
-			if (uploadImageInputRef.current) {
-				uploadImageInputRef.current.value = ""; // 清空 input
-			}
 		}
 	};
 
@@ -282,7 +111,6 @@ const Dashboard = () => {
 
 	return (
 		<>
-
 			<AdminHeader handleLogout={handleLogout} openModal={openModal} />
 
 			<ProductTable adminProducts={adminProducts} openModal={openModal} />
@@ -294,21 +122,8 @@ const Dashboard = () => {
 			<ProductFormModal
 				ref={adminModalRef}
 				tempProduct={tempProduct}
-				setTempProduct={setTempProduct}
-				formErrors={formErrors}
-				handleModalInputChange={handleModalInputChange}
-				updateProduct={updateProduct}
+				onSave={handleSaveProduct}
 				closeModal={() => closeModal(tempProduct?.id ? "edit" : "newItem")}
-				uploadingImages={uploadingImages}
-				setUploadingImages={setUploadingImages}
-				previewImage={previewImage}
-				setPreviewImage={setPreviewImage}
-				selectedFile={selectedFile}
-				setSelectedFile={setSelectedFile}
-				isUploading={isUploading}
-				uploadImageInputRef={uploadImageInputRef}
-				uploadImage={uploadImage}
-				handleUploadImage={handleUploadImage}
 			/>
 
 			<DeleteConfirmModal

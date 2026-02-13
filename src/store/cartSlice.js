@@ -68,7 +68,6 @@ const cartSlice = createSlice({
 		carts: [],
 		total: 0,
 		finalTotal: 0,
-		isLoading: false, // 取得購物車時的 loading
 		isAddingToCart: false, // 加入購物車時的 loading
 		isClearingAll: false, // 清空購物車時的 loading
 		updatingIds: [], // 正在更新或刪除中的 cartId 陣列，用來顯示個別項目的 loading
@@ -84,17 +83,10 @@ const cartSlice = createSlice({
 	extraReducers: (builder) => {
 		builder
 			// ── fetchCart ──
-			.addCase(fetchCart.pending, (state) => {
-				state.isLoading = true;
-			})
 			.addCase(fetchCart.fulfilled, (state, action) => {
-				state.isLoading = false;
 				state.carts = action.payload.carts;
 				state.total = action.payload.total;
 				state.finalTotal = action.payload.final_total;
-			})
-			.addCase(fetchCart.rejected, (state) => {
-				state.isLoading = false;
 			})
 
 			// ── addToCart ──

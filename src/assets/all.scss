@@ -20,6 +20,10 @@ $tropical-yellow: #fcd34d;
 
 @import 'bootstrap/scss/bootstrap';
 
+body.modal-open {
+  overflow: hidden;
+}
+
 // 購物車數量選擇器 - 自訂 select
 .cart-qty-select {
   appearance: none;
