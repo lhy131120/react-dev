@@ -63,9 +63,9 @@ const ProductCard = memo(({ product, getProductDetails }) => {
 
 					{/* 底部操作區 */}
 					<div className="product-card-footer">
-						<button className="add-to-cart-btn">
-							<span>🛒</span> 加入購物車
-						</button>
+						<span className="view-detail-text">
+							<span>👁️</span> 查看詳情
+						</span>
 					</div>
 				</div>
 			</div>

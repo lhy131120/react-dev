@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchProduct, clearSelectedProduct } from "@/store/productDetailSlice";
 import { addToCart } from "@/store/cartSlice";
@@ -12,6 +12,15 @@ import "swiper/css/thumbs";
 import "swiper/css/free-mode";
 import "swiper/css/zoom";
 import "@/styles/ProductDetail.css";
+
+const TOAST_OPTIONS = {
+	autoClose: 3000,
+	hideProgressBar: false,
+	closeOnClick: true,
+	pauseOnHover: true,
+	draggable: true,
+	theme: "colored",
+};
 
 const Product = () => {
 	const navigate = useNavigate();
@@ -37,14 +46,7 @@ const Product = () => {
 				}
 			})
 			.catch((msg) => {
-				toast.error(`取得產品失敗: ${msg}`, {
-					autoClose: 3000,
-					hideProgressBar: false,
-					closeOnClick: true,
-					pauseOnHover: true,
-					draggable: true,
-					theme: "colored",
-				});
+				toast.error(`取得產品失敗: ${msg}`, TOAST_OPTIONS);
 				setTimeout(() => {
 					navigate("/products");
 				}, 1500);
@@ -56,33 +58,22 @@ const Product = () => {
 		};
 	}, [id, dispatch, navigate]);
 
-	const handleAddCart = (productId, qty = quantity) => {
-		dispatch(addToCart({ productId, qty }))
-			.unwrap()
-			.then((res) => {
-				toast.success(`${res?.message || "成功加進購物車"}!`, {
-					autoClose: 3000,
-					hideProgressBar: false,
-					closeOnClick: true,
-					pauseOnHover: true,
-					draggable: true,
-					theme: "colored",
+	const handleAddCart = useCallback(
+		(productId, qty = quantity) => {
+			return dispatch(addToCart({ productId, qty }))
+				.unwrap()
+				.then((res) => {
+					toast.success(`${res?.message || "成功加進購物車"}!`, TOAST_OPTIONS);
+				})
+				.catch((msg) => {
+					toast.error(`加入購物車失敗: ${msg}`, TOAST_OPTIONS);
 				});
-			})
-			.catch((msg) => {
-				toast.error(`加入購物車失敗: ${msg}`, {
-					autoClose: 3000,
-					hideProgressBar: false,
-					closeOnClick: true,
-					pauseOnHover: true,
-					draggable: true,
-					theme: "colored",
-				});
-			});
-	};
+		},
+		[dispatch, quantity]
+	);
 
-	// 收集所有圖片
-	const getAllImages = () => {
+	// 收集所有圖片（memoized）
+	const allImages = useMemo(() => {
 		if (!tempProduct) return [];
 		const images = [];
 		if (tempProduct.imageUrl?.trim()) {
@@ -92,18 +83,15 @@ const Product = () => {
 			tempProduct.imagesUrl.filter((img) => img && img.trim() !== "").forEach((img) => images.push(img));
 		}
 		return images;
-	};
+	}, [tempProduct]);
 
-	// 計算折扣百分比
-	const getDiscountPercent = () => {
+	// 計算折扣百分比（memoized）
+	const discountPercent = useMemo(() => {
 		if (!tempProduct || !tempProduct.origin_price || tempProduct.origin_price <= tempProduct.price) {
 			return 0;
 		}
 		return Math.round(((tempProduct.origin_price - tempProduct.price) / tempProduct.origin_price) * 100);
-	};
-
-	const allImages = getAllImages();
-	const discountPercent = getDiscountPercent();
+	}, [tempProduct]);
 
 	if (!tempProduct) {
 		return null;
@@ -294,8 +282,7 @@ const Product = () => {
 									className="buy-now-btn"
 									disabled={loading}
 									onClick={() => {
-										handleAddCart(tempProduct.id);
-										setTimeout(() => navigate("/cart"), 2000);
+										handleAddCart(tempProduct.id).then(() => navigate("/cart"));
 									}}
 								>
 									立即購買

@@ -1,0 +1,110 @@
+/* ========================================
+   404 Not Found 頁面
+   ======================================== */
+
+.not-found-page {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	min-height: 60vh;
+	text-align: center;
+	padding: 2rem;
+}
+
+.not-found-code {
+	font-size: clamp(6rem, 20vw, 12rem);
+	font-weight: 800;
+	background: linear-gradient(135deg, #d97706, #f59e0b, #fbbf24);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+	line-height: 1;
+	margin-bottom: 1rem;
+	animation: notFoundFloat 3s ease-in-out infinite;
+}
+
+.not-found-emoji {
+	font-size: 4rem;
+	margin-bottom: 1.5rem;
+	animation: notFoundShake 2s ease-in-out infinite;
+}
+
+.not-found-title {
+	font-size: clamp(1.5rem, 4vw, 2rem);
+	color: #92400e;
+	margin-bottom: 0.75rem;
+	font-weight: 700;
+}
+
+.not-found-desc {
+	font-size: 1.1rem;
+	color: #78350f;
+	margin-bottom: 2rem;
+	max-width: 400px;
+	line-height: 1.6;
+}
+
+.not-found-countdown {
+	font-size: 0.95rem;
+	color: #a16207;
+	margin-bottom: 1.5rem;
+}
+
+.not-found-countdown span {
+	font-weight: 600;
+}
+
+.not-found-actions {
+	display: flex;
+	gap: 1rem;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.not-found-btn-primary {
+	padding: 0.875rem 2rem;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #fff;
+	background: linear-gradient(135deg, #d97706, #f59e0b);
+	border: none;
+	border-radius: 50px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+}
+
+.not-found-btn-primary:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 8px 25px rgba(217, 119, 6, 0.4);
+}
+
+.not-found-btn-secondary {
+	padding: 0.875rem 2rem;
+	font-size: 1rem;
+	font-weight: 600;
+	color: #92400e;
+	background: rgba(217, 119, 6, 0.1);
+	border: 2px solid rgba(217, 119, 6, 0.3);
+	border-radius: 50px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+}
+
+.not-found-btn-secondary:hover {
+	background: rgba(217, 119, 6, 0.2);
+	border-color: #d97706;
+	transform: translateY(-3px);
+}
+
+@keyframes notFoundFloat {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-15px); }
+}
+
+@keyframes notFoundShake {
+	0%, 100% { transform: rotate(0deg); }
+	25% { transform: rotate(-5deg); }
+	75% { transform: rotate(5deg); }
+}

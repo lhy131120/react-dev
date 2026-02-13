@@ -42,7 +42,8 @@ const Cart = () => {
 		try {
 			const result = await dispatch(removeCartItem(cartId)).unwrap();
 			toast.success(`產品已移除！${result.message || ""}`);
-			await dispatch(fetchCart()).unwrap();
+			// removeCartItem.fulfilled 已從本地 state 移除，再 fetchCart 同步 server 端總計
+			dispatch(fetchCart());
 		} catch (message) {
 			toast.error(`刪除失敗：${message || "請稍後再試"}`);
 		}
@@ -86,7 +87,6 @@ const Cart = () => {
 	useEffect(() => {
 		dispatch(fetchCart())
 			.unwrap()
-			.then(() => toast.success("取得購物車成功!"))
 			.catch((msg) => toast.error(`取得購物車失敗: ${msg}`));
 	}, [dispatch]);
 
@@ -165,7 +165,7 @@ const Cart = () => {
 														type="button"
 														className="cart-qty-btn"
 														onClick={() => handleUpdateQty(cart.id, cart.qty + 1)}
-														disabled={cart.qty >= cart.product.stock || updatingIds.includes(cart.id)}
+														disabled={cart.qty >= (cart.product.num || 99) || updatingIds.includes(cart.id)}
 													>
 														+
 													</button>
@@ -199,7 +199,7 @@ const Cart = () => {
 									</tr>
 									<tr>
 										<td colSpan={4} className="text-end">
-											拆扣後?:
+											折扣後:
 										</td>
 										<td className="text-center">{finalTotal}</td>
 									</tr>

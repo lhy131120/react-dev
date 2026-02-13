@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from "react-router";
+import { Outlet } from "react-router";
 
 const BackendLayout = () => {
 	return (

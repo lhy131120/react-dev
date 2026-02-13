@@ -2,8 +2,7 @@
 export * from "./common";
 
 // Auth Components
-export { default as AuthRoute } from "./AuthRoute";
-export { default as ProtectedRoute } from "./ProtectedRoute";
+export { default as RouteGuard } from "./RouteGuard";
 
 // UI Components
 export { default as ProductCard } from "./ProductCard";

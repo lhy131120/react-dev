@@ -39,7 +39,6 @@ const requestInterceptor = (config) => {
 	// 檢查是否需要顯示 loading（預設顯示，除非 config.silent = true）
 	if (!config.silent) {
     const requestId = `${config.method}-${config.url}-${Date.now()}`;
-    // console.log(requestId, config);
 		config._requestId = requestId;
 		pendingRequests.add(requestId);
 		
@@ -82,7 +81,6 @@ const responseErrorHandler = (error) => {
 
 	// 401 處理
 	if (response?.status === 401) {
-		console.warn("Token 無效或過期，需重新登入");
 		document.cookie = "hexToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 		window.location.href = `${import.meta.env.BASE_URL}#/login`;
 	}

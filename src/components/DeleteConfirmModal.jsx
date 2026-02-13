@@ -1,14 +1,8 @@
 // components/DeleteConfirmModal.jsx
-import { forwardRef, useImperativeHandle, useState, useEffect } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
 
 const DeleteConfirmModal = forwardRef(({ tempProduct, handleDeleteItem, closeModal }, ref) => {
 	const [showModal, setShowModal] = useState(false);
-
-	useEffect(() => {
-		if (!showModal) {
-			document.body.classList.remove("modal-open");
-		}
-	}, [showModal]);
 
 	useImperativeHandle(ref, () => ({
 		show: () => {
@@ -17,6 +11,7 @@ const DeleteConfirmModal = forwardRef(({ tempProduct, handleDeleteItem, closeMod
 		},
 		hide: () => {
 			setShowModal(false);
+			document.body.classList.remove("modal-open");
 		},
 	}));
 

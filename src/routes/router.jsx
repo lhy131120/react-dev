@@ -13,8 +13,7 @@ import AdminSetting from "@/views/admin/AdminSetting";
 
 import NotFound from "@/views/front/NotFound";
 
-import AuthRoute from "@/components/AuthRoute";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import RouteGuard from "@/components/RouteGuard";
 
 const router = createHashRouter([
 	{
@@ -38,7 +37,7 @@ const router = createHashRouter([
 				element: <Cart />,
 			},
 			{
-				element: <AuthRoute />,
+				element: <RouteGuard type="auth" />,
 				children: [
 					{
 						path: "login",
@@ -53,7 +52,7 @@ const router = createHashRouter([
 		element: <BackendLayout />,
 		children: [
 			{
-				element: <ProtectedRoute />,
+				element: <RouteGuard type="protected" />,
 				children: [
 					{
 						path: "dashboard",

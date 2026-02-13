@@ -76,8 +76,8 @@ createRoot(document.getElementById("root")).render(
 			pauseOnFocusLoss
 			draggable
 			pauseOnHover
-			theme="light" // light / dark / colored
-			transition={Bounce} // 可選：Flip / Bounce / Zoom 等動畫
+			theme="light"
+			transition={Bounce}
 		/>
 	</>
 );

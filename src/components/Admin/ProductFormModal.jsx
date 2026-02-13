@@ -5,12 +5,12 @@ import { api } from "@/services";
 import { toast } from "react-toastify";
 
 const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) => {
-	const modalEl = useRef(null);
 	const [showModal, setShowModal] = useState(false);
 
 	// 圖片上傳 states（元件內部管理）
 	const [uploadingImages, setUploadingImages] = useState(false);
 	const [previewImage, setPreviewImage] = useState(null);
+	const previewImageRef = useRef(null);
 	const [selectedFile, setSelectedFile] = useState(null);
 	const [isUploading, setIsUploading] = useState(false);
 	const mainImageInputRef = useRef(null);
@@ -59,7 +59,9 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 		if (!showModal) {
 			document.body.classList.remove("modal-open");
 			setUploadingImages(false);
+			if (previewImageRef.current) URL.revokeObjectURL(previewImageRef.current);
 			setPreviewImage(null);
+			previewImageRef.current = null;
 			setSelectedFile(null);
 			setIsUploading(false);
 			if (mainImageInputRef.current) mainImageInputRef.current.value = "";
@@ -91,7 +93,7 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 			const response = await api.post("/admin/upload", formData);
 			setValue("imageUrl", response.data.imageUrl, { shouldValidate: true, shouldDirty: true });
 		} catch (error) {
-			toast.error(`${error?.response?.data?.message}` || "上傳圖片失敗");
+			toast.error(error?.response?.data?.message || "上傳圖片失敗");
 		}
 	};
 
@@ -107,7 +109,7 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 			setValue("imagesUrl", [...current, response.data.imageUrl], { shouldDirty: true });
 			toast.success("圖片上傳成功！");
 		} catch (error) {
-			toast.error(`${error?.response?.data?.message}` || "上傳圖片失敗");
+			toast.error(error?.response?.data?.message || "上傳圖片失敗");
 		} finally {
 			setUploadingImages(false);
 			setPreviewImage(null);
@@ -125,7 +127,7 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 			<div className="modal-backdrop fade show" onClick={closeModal} />
 
 			{/* Modal */}
-			<div className="modal fade show d-block" ref={modalEl} tabIndex="-1" style={{ display: "block" }}>
+			<div className="modal fade show d-block" tabIndex="-1">
 				<div className="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-xl-down modal-dialog-scrollable">
 					<div className="modal-content">
 						<div className="modal-header">
@@ -587,7 +589,10 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 																onChange={(e) => {
 																	const file = e.target.files?.[0];
 																	if (file) {
-																		setPreviewImage(URL.createObjectURL(file));
+																		if (previewImageRef.current) URL.revokeObjectURL(previewImageRef.current);
+																		const url = URL.createObjectURL(file);
+																		previewImageRef.current = url;
+																		setPreviewImage(url);
 																		setSelectedFile(file);
 																	}
 																}}

@@ -51,12 +51,7 @@ const authSlice = createSlice({
 		isAuthenticated: null, // null = 未檢查, true = 已登入, false = 未登入
 		isLoggingIn: false, // 登入中的 loading 狀態
 	},
-	reducers: {
-		// 重設認證狀態（路由切換時需要重新檢查）
-		resetAuth(state) {
-			state.isAuthenticated = null;
-		},
-	},
+	reducers: {},
 	extraReducers: (builder) => {
 		builder
 			// ── checkAuth ──
@@ -87,5 +82,4 @@ const authSlice = createSlice({
 	},
 });
 
-export const { resetAuth } = authSlice.actions;
 export default authSlice.reducer;

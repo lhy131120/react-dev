@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 const AdminHeader = ({handleLogout, openModal}) => {
-  const navigator = useNavigate();
+  const navigate = useNavigate();
 	return (
 		<div className="d-flex mb-5 justify-content-between align-items-center">
 			<h1 className="fs-4 fw-bold" style={{ color: '#92400e' }}>
@@ -10,7 +10,7 @@ const AdminHeader = ({handleLogout, openModal}) => {
 				<button 
 					type="button" 
 					className="btn btn-secondary" 
-					onClick={() =>  navigator("/")}
+					onClick={() => navigate("/")}
 					style={{ borderColor: '#d97706' }}
 				>
 					回前台
@@ -18,7 +18,7 @@ const AdminHeader = ({handleLogout, openModal}) => {
 				<button 
 					type="button" 
 					className="btn btn-danger" 
-					onClick={() => handleLogout()}
+					onClick={handleLogout}
 				>
 					登出
 				</button>

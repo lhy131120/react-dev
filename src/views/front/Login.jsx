@@ -120,7 +120,7 @@ const Login = () => {
 					position: "top-center",
 					theme: "colored",
 				});
-				reset();
+				reset({ username: data.username, password: "" });
 			});
 	};
 

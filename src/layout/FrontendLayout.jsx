@@ -101,7 +101,6 @@ const FrontendLayout = () => {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const cartItemCount = useSelector((state) => state.cart.carts.length);
 
-	console.log(cartItemCount);
 	// 當選單打開時禁止背景滾動
 	useEffect(() => {
 		mobileMenuOpen ? (document.body.style.overflow = "hidden") : (document.body.style.overflow = "");

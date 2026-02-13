@@ -69,7 +69,7 @@ const Dashboard = () => {
 	const handleSaveProduct = async (data) => {
 		try {
 			const result = await dispatch(saveProduct(data)).unwrap();
-			toast.success(`${result.message}` || "操作成功");
+			toast.success(result.message || "操作成功");
 			closeModal(data.id ? "edit" : "newItem");
 			await dispatch(fetchAdminProducts(currentPage)).unwrap();
 		} catch (error) {
@@ -88,7 +88,7 @@ const Dashboard = () => {
 	const handleDeleteItem = async (id) => {
 		try {
 			const result = await dispatch(deleteAdminProduct(id)).unwrap();
-			toast.success(`${result.message}` || "成功刪除產品!");
+			toast.success(result.message || "成功刪除產品!");
 			await dispatch(fetchAdminProducts(currentPage)).unwrap();
 		} catch (error) {
 			toast.error(`刪除產品失敗: ${error}`);
