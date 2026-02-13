@@ -1,6 +1,5 @@
+import { plainApi, setToken } from "@/services";
 import { useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { login } from "@/store/authSlice";
 import { useNavigate } from "react-router";
 import { toast } from "react-toastify";
 import { useForm } from "react-hook-form";
@@ -96,8 +95,7 @@ const LoginIllustration = () => (
 
 const Login = () => {
 	const navigate = useNavigate();
-	const dispatch = useDispatch();
-	const { isLoggingIn: isLoading } = useSelector((state) => state.auth);
+	const [isLoading, setIsLoading] = useState(false);
 	const [showPassword, setShowPassword] = useState(false);
 
 	const { register, handleSubmit, reset, formState: { errors } } = useForm({
@@ -107,21 +105,33 @@ const Login = () => {
 		}
 	});
 
-	const onSubmit = (data) => {
-		dispatch(login(data))
-			.unwrap()
-			.then(() => {
-				toast.success("登入成功");
-				navigate("/admin/dashboard", { replace: true });
-			})
-			.catch((msg) => {
-				toast.error(`${msg}`, {
-					autoClose: 3000,
-					position: "top-center",
-					theme: "colored",
-				});
-				reset();
+	const onSubmit = async (data) => {
+		// console.log(data);
+		setIsLoading(true);
+
+		try {
+			const response = await plainApi.post("/admin/signin", data);
+			const { token, expired } = response.data;
+
+			if (!token) {
+				throw new Error("未收到有效的 token");
+			}
+
+			setToken(token, expired);
+			toast.success("登入成功");
+			navigate("/admin/dashboard", { replace: true });
+		} catch (error) {
+			const errMsg = error?.response?.data?.message || error?.message || "登入失敗，請檢查帳號密碼或網路連線";
+
+			toast.error(`${errMsg}`, {
+				autoClose: 3000,
+				position: "top-center",
+				theme: "colored",
 			});
+			reset();
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	return (

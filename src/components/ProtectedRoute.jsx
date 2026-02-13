@@ -1,29 +1,17 @@
-import { plainApi } from "@/services";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { checkAuth } from "@/store/authSlice";
 import { Navigate, Outlet } from "react-router";
 
 const ProtectedRoute = () => {
-	const [isAuthenticated, setIsAuthenticated] = useState(null);
+	const dispatch = useDispatch();
+	const { isAuthenticated } = useSelector((state) => state.auth);
 
 	useEffect(() => {
-		let isMounted = true;
-
-		const checkAuth = async () => {
-			try {
-				await plainApi.post("/api/user/check");
-				if (isMounted) setIsAuthenticated(true);
-			} catch (error) {
-				console.log("檢查登入失敗", error?.response?.data || error.message);
-				if (isMounted) setIsAuthenticated(false);
-			}
-		};
-    
-		checkAuth();
-
-		return () => {
-			isMounted = false; // 防止 unmount 後還 setState
-		};
-	}, []);
+		if (isAuthenticated === null) {
+			dispatch(checkAuth());
+		}
+	}, [dispatch, isAuthenticated]);
 
 	if (isAuthenticated === null) {
 		return <h2 className="text-center py-5">檢查登入狀態中...</h2>;

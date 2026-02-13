@@ -13,6 +13,18 @@ export const fetchCart = createAsyncThunk("cart/fetchCart", async (_, { rejectWi
 	}
 });
 
+// 加入購物車（Product 頁面用）
+export const addToCart = createAsyncThunk("cart/addToCart", async ({ productId, qty }, { rejectWithValue }) => {
+	try {
+		const response = await api.post("/cart", {
+			data: { product_id: productId, qty },
+		});
+		return response.data;
+	} catch (error) {
+		return rejectWithValue(error.response?.data?.message || "加入購物車失敗");
+	}
+});
+
 // 更新購物車項目數量
 export const updateCartItem = createAsyncThunk(
 	"cart/updateCartItem",
@@ -57,13 +69,13 @@ const cartSlice = createSlice({
 		total: 0,
 		finalTotal: 0,
 		isLoading: false, // 取得購物車時的 loading
+		isAddingToCart: false, // 加入購物車時的 loading
 		isClearingAll: false, // 清空購物車時的 loading
 		updatingIds: [], // 正在更新或刪除中的 cartId 陣列，用來顯示個別項目的 loading
 	},
 	reducers: {
-		// optimisticUpdate: For updating cart item quantity in the UI before server response
+		// optimisticUpdate: 在 server 回應前先更新 UI 數量
 		optimisticUpdateQty(state, action) {
-			console.log("optimisticUpdateQty", state.carts);
 			const { cartId, qty } = action.payload;
 			const item = state.carts.find((i) => i.id === cartId);
 			if (item) item.qty = qty;
@@ -73,20 +85,27 @@ const cartSlice = createSlice({
 		builder
 			// ── fetchCart ──
 			.addCase(fetchCart.pending, (state) => {
-				console.log("fetchCart pending", state.carts);
 				state.isLoading = true;
 			})
 			.addCase(fetchCart.fulfilled, (state, action) => {
-				console.log("fetchCart fulfilled", state);
-				console.log("fetchCart fulfilled", action);
 				state.isLoading = false;
 				state.carts = action.payload.carts;
 				state.total = action.payload.total;
 				state.finalTotal = action.payload.final_total;
 			})
 			.addCase(fetchCart.rejected, (state) => {
-				console.log("fetchCart rejected", state.carts);
 				state.isLoading = false;
+			})
+
+			// ── addToCart ──
+			.addCase(addToCart.pending, (state) => {
+				state.isAddingToCart = true;
+			})
+			.addCase(addToCart.fulfilled, (state) => {
+				state.isAddingToCart = false;
+			})
+			.addCase(addToCart.rejected, (state) => {
+				state.isAddingToCart = false;
 			})
 
 			// ── updateCartItem ──
@@ -104,7 +123,6 @@ const cartSlice = createSlice({
 
 			// ── removeCartItem ──
 			.addCase(removeCartItem.pending, (state, action) => {
-				console.log("removeCartItem pending", action);
 				state.updatingIds.push(action.meta.arg);
 			})
 			.addCase(removeCartItem.fulfilled, (state, action) => {

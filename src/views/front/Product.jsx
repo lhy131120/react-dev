@@ -1,8 +1,8 @@
-import { api } from "@/services";
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchProduct, clearSelectedProduct } from "@/store/productsSlice";
+import { fetchProduct, clearSelectedProduct } from "@/store/productDetailSlice";
+import { addToCart } from "@/store/cartSlice";
 import { toast } from "react-toastify";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Thumbs, FreeMode, Zoom } from "swiper/modules";
@@ -19,12 +19,12 @@ const Product = () => {
 	const { id } = useParams();
 
 	// 從 Redux store 讀取單一產品
-	const { selectedProduct: tempProduct } = useSelector((state) => state.products);
+	const { selectedProduct: tempProduct } = useSelector((state) => state.productDetail);
+	const { isAddingToCart: loading } = useSelector((state) => state.cart);
 
 	const [thumbsSwiper, setThumbsSwiper] = useState(null);
 	const [quantity, setQuantity] = useState(1);
 	const [selectedFlavor, setSelectedFlavor] = useState(null);
-	const [loading, setLoading] = useState(false);
 
 	// 拉取產品詳情
 	useEffect(() => {
@@ -56,36 +56,29 @@ const Product = () => {
 		};
 	}, [id, dispatch, navigate]);
 
-	const handleAddCart = async (id, qty = quantity) => {
-		setLoading(true);
-		const data = {
-			product_id: id,
-			qty,
-		};
-		try {
-			const response = await api.post(`/cart`, { data });
-			toast.success(`${response.data?.message || "成功加進購物車"}!`, {
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
+	const handleAddCart = (productId, qty = quantity) => {
+		dispatch(addToCart({ productId, qty }))
+			.unwrap()
+			.then((res) => {
+				toast.success(`${res?.message || "成功加進購物車"}!`, {
+					autoClose: 3000,
+					hideProgressBar: false,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					theme: "colored",
+				});
+			})
+			.catch((msg) => {
+				toast.error(`加入購物車失敗: ${msg}`, {
+					autoClose: 3000,
+					hideProgressBar: false,
+					closeOnClick: true,
+					pauseOnHover: true,
+					draggable: true,
+					theme: "colored",
+				});
 			});
-			setTimeout(() => {
-				setLoading(false);
-			}, 1500);
-		} catch (error) {
-			toast.error(`加入購物車失敗: ${error.response?.data?.message}`, {
-				autoClose: 3000,
-				hideProgressBar: false,
-				closeOnClick: true,
-				pauseOnHover: true,
-				draggable: true,
-				theme: "colored",
-			});
-			setLoading(false);
-		}
 	};
 
 	// 收集所有圖片
@@ -96,9 +89,7 @@ const Product = () => {
 			images.push(tempProduct.imageUrl.trim());
 		}
 		if (tempProduct.imagesUrl?.length > 0) {
-			tempProduct.imagesUrl
-				.filter((img) => img && img.trim() !== "")
-				.forEach((img) => images.push(img));
+			tempProduct.imagesUrl.filter((img) => img && img.trim() !== "").forEach((img) => images.push(img));
 		}
 		return images;
 	};
@@ -154,9 +145,7 @@ const Product = () => {
 							</SwiperSlide>
 						))}
 						{/* 折扣標籤 */}
-						{discountPercent > 0 && (
-							<div className="discount-badge">-{discountPercent}% OFF</div>
-						)}
+						{discountPercent > 0 && <div className="discount-badge">-{discountPercent}% OFF</div>}
 					</Swiper>
 
 					{/* 縮圖 Swiper */}
@@ -190,9 +179,7 @@ const Product = () => {
 					{/* 分類標籤 */}
 					<div className="product-categories">
 						<span className="category-tag">{tempProduct.category}</span>
-						{tempProduct.subcategory && (
-							<span className="subcategory-tag">{tempProduct.subcategory}</span>
-						)}
+						{tempProduct.subcategory && <span className="subcategory-tag">{tempProduct.subcategory}</span>}
 					</div>
 
 					{/* 商品標題 */}
@@ -202,7 +189,9 @@ const Product = () => {
 					{tempProduct.label && tempProduct.label.length > 0 && (
 						<div className="product-labels">
 							{tempProduct.label.map((tag, i) => (
-								<span key={i} className="label-tag">#{tag}</span>
+								<span key={i} className="label-tag">
+									#{tag}
+								</span>
 							))}
 						</div>
 					)}
@@ -273,7 +262,9 @@ const Product = () => {
 								+
 							</button>
 						</div>
-						<span className="stock-info">庫存：{tempProduct.num} {tempProduct.unit}</span>
+						<span className="stock-info">
+							庫存：{tempProduct.num} {tempProduct.unit}
+						</span>
 					</div>
 
 					{/* 狀態與加入購物車 */}
