@@ -122,10 +122,11 @@ const CheckoutForm = ({
 
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="checkout-form-group">
-            <label>
+            <label htmlFor="customName">
               姓名 <span className="required">*</span>
             </label>
             <input
+              id="customName"
               type="text"
               placeholder="請輸入收件人姓名"
               className={errors.name ? "is-invalid" : ""}
@@ -137,10 +138,11 @@ const CheckoutForm = ({
           </div>
 
           <div className="checkout-form-group">
-            <label>
+            <label htmlFor="customMail">
               Email <span className="required">*</span>
             </label>
-            <input
+            <input 
+              id="customMail"
               type="email"
               placeholder="請輸入 Email"
               className={errors.email ? "is-invalid" : ""}
@@ -158,10 +160,11 @@ const CheckoutForm = ({
           </div>
 
           <div className="checkout-form-group">
-            <label>
+            <label htmlFor="customTel">
               電話 <span className="required">*</span>
             </label>
             <input
+              id="customTel" 
               type="tel"
               placeholder="請輸入聯絡電話"
               className={errors.tel ? "is-invalid" : ""}
@@ -179,10 +182,11 @@ const CheckoutForm = ({
           </div>
 
           <div className="checkout-form-group">
-            <label>
+            <label htmlFor="customAddress">
               地址 <span className="required">*</span>
             </label>
             <input
+              id="customAddress"
               type="text"
               placeholder="請輸入收件地址"
               className={errors.address ? "is-invalid" : ""}
@@ -196,8 +200,9 @@ const CheckoutForm = ({
           </div>
 
           <div className="checkout-form-group">
-            <label>留言</label>
+            <label htmlFor="customComment">留言</label>
             <textarea
+              id="customComment"
               placeholder="有什麼想告訴我們的嗎？（選填）"
               rows={3}
               {...register("message")}
