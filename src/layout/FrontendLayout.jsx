@@ -1,6 +1,7 @@
 import { Outlet, NavLink } from "react-router";
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchCart } from "@/store/cartSlice";
 import "@/styles/Header.css";
 
 // SVG Icons
@@ -98,8 +99,14 @@ const CloseIcon = () => (
 );
 
 const FrontendLayout = () => {
+	const dispatch = useDispatch();
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const cartItemCount = useSelector((state) => state.cart.carts.length);
+
+	// 初始載入時取得購物車資料
+	useEffect(() => {
+		dispatch(fetchCart());
+	}, [dispatch]);
 
 	// 當選單打開時禁止背景滾動
 	useEffect(() => {

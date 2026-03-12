@@ -1,7 +1,7 @@
 // components/DeleteConfirmModal.jsx
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { useImperativeHandle, useState } from "react";
 
-const DeleteConfirmModal = forwardRef(({ tempProduct, handleDeleteItem, closeModal }, ref) => {
+const DeleteConfirmModal = ({ tempProduct, handleDeleteItem, closeModal, ref }) => {
 	const [showModal, setShowModal] = useState(false);
 
 	useImperativeHandle(ref, () => ({
@@ -28,7 +28,7 @@ const DeleteConfirmModal = forwardRef(({ tempProduct, handleDeleteItem, closeMod
 		<>
 			{/* 解決bootstrap 和react的沖突 Backdrop - 必須先渲染 */}
 			<div className="modal-backdrop fade show" onClick={closeModal} />
-			
+
 			{/* Modal */}
 			<div className="modal fade show d-block" tabIndex="-1" style={{ display: "block" }}>
 				<div className="modal-dialog modal-dialog-centered modal-md">
@@ -55,6 +55,6 @@ const DeleteConfirmModal = forwardRef(({ tempProduct, handleDeleteItem, closeMod
 			</div>
 		</>
 	);
-});
+};
 
 export default DeleteConfirmModal;

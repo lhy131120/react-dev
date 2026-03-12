@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchProduct, clearSelectedProduct } from "@/store/productDetailSlice";
-import { addToCart } from "@/store/cartSlice";
+import { addToCart, fetchCart } from "@/store/cartSlice";
 import { toast } from "react-toastify";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Thumbs, FreeMode, Zoom } from "swiper/modules";
@@ -64,6 +64,7 @@ const Product = () => {
 				.unwrap()
 				.then((res) => {
 					toast.success(`${res?.message || "成功加進購物車"}!`, TOAST_OPTIONS);
+					dispatch(fetchCart());
 				})
 				.catch((msg) => {
 					toast.error(`加入購物車失敗: ${msg}`, TOAST_OPTIONS);
@@ -244,14 +245,14 @@ const Product = () => {
 							<span className="qty-value">{quantity}</span>
 							<button
 								className="qty-btn"
-								onClick={() => setQuantity((prev) => Math.min(tempProduct.num || 99, prev + 1))}
-								disabled={quantity >= (tempProduct.num || 99)}
+								onClick={() => setQuantity((prev) => Math.min(tempProduct.stock || 99, prev + 1))}
+								disabled={quantity >= (tempProduct.stock || 99)}
 							>
 								+
 							</button>
 						</div>
 						<span className="stock-info">
-							庫存：{tempProduct.num} {tempProduct.unit}
+							庫存：{tempProduct.stock} {tempProduct.unit}
 						</span>
 					</div>
 

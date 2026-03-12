@@ -1,10 +1,10 @@
 // components/Admin/ProductFormModal.jsx
-import { useRef, useEffect, forwardRef, useImperativeHandle, useState } from "react";
+import { useRef, useEffect, useImperativeHandle, useState } from "react";
 import { useForm } from "react-hook-form";
 import { api } from "@/services";
 import { toast } from "react-toastify";
 
-const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) => {
+const ProductFormModal = ({ tempProduct, onSave, closeModal, ref }) => {
 	const [showModal, setShowModal] = useState(false);
 
 	// 圖片上傳 states（元件內部管理）
@@ -80,6 +80,7 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 			flavor: (getValues("flavor") || []).filter((f) => f?.trim()),
 			imagesUrl: getValues("imagesUrl") || [],
 			is_enabled: data.is_enabled ? 1 : 0,
+			stock: Number(data.stock),
 		});
 	};
 
@@ -252,22 +253,22 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 												</div>
 
 												<div className="mb-3 col-lg-2">
-													<label htmlFor="num" className="form-label">
+													<label htmlFor="stock" className="form-label">
 														庫存 <span className="text-danger">*</span>
 													</label>
 													<input
-														id="num"
+														id="stock"
 														type="number"
-														min="0"
-														className={`form-control ${errors.num ? "is-invalid" : ""}`}
+														min="1"
+														className={`form-control ${errors.stock ? "is-invalid" : ""}`}
 														placeholder="庫存"
-														{...register("num", {
+														{...register("stock", {
 															required: "此欄位為必填",
 															valueAsNumber: true,
-															min: { value: 0, message: "數量不能小於 0" },
+															min: { value: 1, message: "數量必須大於 0" },
 														})}
 													/>
-													{errors.num && <div className="invalid-feedback">{errors.num.message}</div>}
+													{errors.stock && <div className="invalid-feedback">{errors.stock.message}</div>}
 												</div>
 											</div>
 
@@ -659,6 +660,6 @@ const ProductFormModal = forwardRef(({ tempProduct, onSave, closeModal }, ref) =
 			</div>
 		</>
 	);
-});
+};
 
 export default ProductFormModal;
